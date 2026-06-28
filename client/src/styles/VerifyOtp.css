@@ -1,0 +1,196 @@
+/* Background */
+
+.otp-page {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top, #1e293b, #020617 70%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Card */
+
+.otp-card {
+
+    background: rgba(15, 23, 42, .75);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 22px;
+    color: white;
+
+    box-shadow:
+        0 0 20px rgba(0, 255, 255, .15),
+        0 0 50px rgba(0, 255, 255, .08);
+
+    transition: .35s;
+}
+
+.otp-card:hover {
+
+    transform: translateY(-5px);
+
+    box-shadow:
+        0 0 25px cyan,
+        0 0 70px rgba(0, 255, 255, .25);
+}
+
+/* Shield */
+
+.shield-icon {
+
+    color: #00ffff;
+
+    text-shadow:
+        0 0 10px cyan,
+        0 0 25px cyan;
+
+    animation: pulse 2s infinite;
+}
+
+/* Title */
+
+.glow-title {
+
+    color: white;
+    font-weight: 700;
+
+    text-shadow:
+        0 0 5px cyan,
+        0 0 10px cyan,
+        0 0 20px cyan;
+}
+
+/* OTP Inputs */
+
+.otp-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+}
+
+.otp-input {
+    width: 52px;
+    height: 58px;
+    flex: 0 0 52px;
+
+    background: #0f172a;
+    color: white;
+    border: 1px solid #334155;
+    border-radius: 12px;
+
+    font-size: 24px;
+    text-align: center;
+    transition: .3s;
+}
+
+.otp-input:focus {
+
+    background: #0f172a;
+    color: white;
+
+    border-color: #00ffff;
+
+    box-shadow:
+        0 0 10px cyan,
+        0 0 20px rgba(0, 255, 255, .4);
+
+    transform: scale(1.05);
+}
+
+/* Button */
+
+.futuristic-btn {
+
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+
+    border: none;
+    color: white;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    font-weight: 600;
+
+    transition: .3s;
+
+    box-shadow: 0 0 15px rgba(0, 191, 255, .4);
+}
+
+.futuristic-btn:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 0 18px cyan,
+        0 0 35px cyan;
+}
+
+/* Pulse Animation */
+
+@keyframes pulse {
+
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.08);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+
+}
+
+/* Tablet */
+
+@media(max-width:768px) {
+
+    .otp-input {
+
+        width: 50px !important;
+        height: 55px;
+        flex:0 0 55px;
+        font-size: 22px;
+    }
+
+}
+
+/* Mobile */
+
+@media(max-width:576px) {
+
+    .otp-page {
+
+        padding: 15px;
+    }
+
+    .otp-card {
+
+        border-radius: 18px;
+    }
+
+    .otp-container {
+
+        gap: 8px;
+    }
+
+    .otp-input {
+
+        width: 42px !important;
+        height: 48px;
+        flex:0 0 42px;
+        font-size: 20px;
+    }
+
+    .glow-title {
+
+        font-size: 1.8rem;
+    }
+
+}

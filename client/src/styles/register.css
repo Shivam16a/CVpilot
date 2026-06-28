@@ -1,0 +1,128 @@
+/* Background */
+
+.register-page {
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #111827, #030712 70%);
+    overflow: hidden;
+    padding: 20px;
+}
+
+/* Card */
+
+.register-card {
+    background: rgba(17, 25, 40, 0.75);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    color: white;
+    box-shadow:
+        0 0 20px rgba(0, 255, 255, .15),
+        0 0 60px rgba(0, 255, 255, .08);
+    transition: .4s;
+}
+
+.register-card:hover {
+    transform: translateY(-5px);
+    box-shadow:
+        0 0 25px cyan,
+        0 0 70px rgba(0, 255, 255, .3);
+}
+
+/* Title */
+
+.glow-title {
+    color: #fff;
+    font-weight: 700;
+    text-shadow:
+        0 0 5px cyan,
+        0 0 10px cyan,
+        0 0 25px cyan;
+}
+
+/* Inputs */
+
+.futuristic-input {
+    background: #0f172a;
+    color: white;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 12px;
+    transition: .3s;
+}
+
+.futuristic-input::placeholder {
+    color: #94a3b8;
+}
+
+.futuristic-input:focus {
+    background: #0f172a;
+    color: white;
+    border-color: #00ffff;
+    box-shadow:
+        0 0 10px cyan,
+        0 0 25px rgba(0, 255, 255, .5);
+}
+
+/* Button */
+
+.futuristic-btn {
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    border: none;
+    color: white;
+    padding: 12px;
+    font-weight: bold;
+    border-radius: 12px;
+    transition: .3s;
+    box-shadow: 0 0 15px #00bfff;
+}
+
+.futuristic-btn:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 0 20px cyan,
+        0 0 40px cyan;
+}
+
+.futuristic-btn:disabled {
+    opacity: .7;
+}
+
+/* Alert */
+
+.alert {
+    border-radius: 12px;
+}
+
+/* Responsive */
+
+@media(max-width:768px) {
+
+    .register-card {
+        margin-top: 20px;
+    }
+
+    .glow-title {
+        font-size: 2rem;
+    }
+
+}
+
+@media(max-width:576px) {
+
+    .register-page {
+        padding: 15px;
+    }
+
+    .register-card {
+        border-radius: 15px;
+    }
+
+    .glow-title {
+        font-size: 1.8rem;
+    }
+
+    .futuristic-input {
+        padding: 10px;
+    }
+
+}

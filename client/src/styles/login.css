@@ -1,0 +1,133 @@
+/* Full Screen Background */
+
+.login-page {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top, #1e293b, #020617 70%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 20px;
+}
+
+/* Glass Card */
+
+.login-card {
+    background: rgba(15, 23, 42, .75);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 22px;
+    color: white;
+    transition: .4s;
+    box-shadow:
+        0 0 20px rgba(0, 255, 255, .15),
+        0 0 50px rgba(0, 255, 255, .08);
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+    box-shadow:
+        0 0 25px cyan,
+        0 0 70px rgba(0, 255, 255, .25);
+}
+
+/* Neon Heading */
+
+.glow-title {
+    color: white;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-shadow:
+        0 0 5px cyan,
+        0 0 10px cyan,
+        0 0 25px cyan;
+}
+
+/* Input */
+
+.futuristic-input {
+    background: #0f172a;
+    color: white;
+    border: 1px solid #334155;
+    padding: 12px;
+}
+
+.futuristic-input::placeholder {
+    color: #94a3b8;
+}
+
+.futuristic-input:focus {
+    background: #0f172a;
+    color: white;
+    border-color: #00ffff;
+    box-shadow:
+        0 0 10px cyan,
+        0 0 20px rgba(0, 255, 255, .45);
+}
+
+/* Input Icon */
+
+.futuristic-icon {
+    background: #111827;
+    color: #00ffff;
+    border: 1px solid #334155;
+}
+
+/* Login Button */
+
+.futuristic-btn {
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    transition: .35s;
+    box-shadow: 0 0 18px rgba(0, 191, 255, .5);
+}
+
+.futuristic-btn:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 0 18px cyan,
+        0 0 35px cyan;
+}
+
+.futuristic-btn:disabled {
+    opacity: .75;
+}
+
+/* Responsive */
+
+@media(max-width:768px) {
+
+    .login-card {
+        border-radius: 18px;
+    }
+
+    .glow-title {
+        font-size: 2rem;
+    }
+
+}
+
+@media(max-width:576px) {
+
+    .login-page {
+        padding: 15px;
+    }
+
+    .login-card {
+        border-radius: 15px;
+    }
+
+    .glow-title {
+        font-size: 1.7rem;
+    }
+
+    .futuristic-input {
+        padding: 10px;
+    }
+
+}
