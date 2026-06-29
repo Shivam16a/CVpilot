@@ -105,7 +105,7 @@ function Login() {
                                             </span>
 
                                             <input
-                                               type={showPassword ? "text" : "password"}
+                                                type={showPassword ? "text" : "password"}
                                                 className="form-control futuristic-input"
                                                 placeholder="Enter password"
                                                 name="password"
@@ -126,7 +126,18 @@ function Login() {
                                         </div>
 
                                     </div>
+                                    {/* Forgot Password */}
 
+                                    <div className="d-flex justify-content-end mb-4">
+                                        <button
+                                            type="button"
+                                            className="btn btn-link forgot-link p-0"
+                                            onClick={() => navigate("/reset-password")}
+                                        >
+                                            Forgot Password?
+                                        </button>
+                                    </div>
+                                    
                                     <button
                                         type="submit"
                                         className="btn futuristic-btn w-100"
