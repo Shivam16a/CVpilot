@@ -21,7 +21,7 @@ const DashboardLayout = ({ children, title }) => {
                     <div className="position-relative text-white p-5 d-flex flex-column justify-content-between h-100 w-100" style={{ zIndex: 3 }}>
                         <div>
                             <h2 className="fw-extrabold tracking-wider text-info mb-1">CV<span className="text-white">Pilot</span></h2>
-                            <p className="text-muted small">Workspace / ATS Builder v1.0</p>
+                            <p className="text-white-50 small">Workspace / ATS Builder v1.0</p>
                         </div>
 
                         <div className="my-auto">

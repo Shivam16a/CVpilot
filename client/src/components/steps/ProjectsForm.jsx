@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useResumeStore } from '../../store/useResumeStore';
 
 export default function ProjectsForm() {
     const { resumeData, updateResumeData, nextStep, prevStep } = useResumeStore();
-    const [loading, setLoading] = useState(false);
+    const [aiLoading, setAiLoading] = useState({}); // Track index-wise loading states
 
-    const { register, control, handleSubmit } = useForm({
+    const { register, control, handleSubmit, watch, setValue } = useForm({
         defaultValues: {
-            projects: resumeData.projects.length > 0 ? resumeData.projects : [{
+            projects: resumeData.projects.length > 0 ? resumeData.projects.map(p => ({
+                ...p,
+                // Default fallback string checking
+                techStackInput: p.techStackInput || (Array.isArray(p.techStack) ? p.techStack.join(', ') : '')
+            })) : [{
                 name: '', techStackInput: '', description: '', github: '', liveLink: ''
             }]
         }
@@ -16,38 +20,64 @@ export default function ProjectsForm() {
 
     const { fields, append, remove } = useFieldArray({ control, name: "projects" });
 
-    const onSubmit = async (data) => {
-        setLoading(true);
-        try {
-            const formattedProjects = data.projects.map(proj => ({
+    // Live Tracking: Watch character updates inside form grid matrix
+    const watchedProjects = watch("projects");
+
+    // Live Sync Matrix: Stream character values instantly to Zustand live preview
+    useEffect(() => {
+        if (watchedProjects) {
+            const formatted = watchedProjects.map(proj => ({
                 ...proj,
-                techStack: proj.techStackInput.split(',').map(s => s.trim()).filter(s => s !== '')
+                techStack: proj.techStackInput ? proj.techStackInput.split(',').map(s => s.trim()).filter(s => s !== '') : []
             }));
+            updateResumeData('projects', formatted);
+        }
+    }, [watchedProjects, updateResumeData]);
 
-            updateResumeData('projects', formattedProjects);
+    // ✨ Magic AI Project Description Enhancer Function
+    const handleAIProjectDesc = async (index) => {
+        const projectName = watchedProjects[index]?.name;
+        const techStackInput = watchedProjects[index]?.techStackInput;
+        const rawDesc = watchedProjects[index]?.description;
+
+        if (!projectName || !rawDesc) {
+            alert("Please fill Project Name and a basic Description first before invoking AI.");
+            return;
+        }
+
+        setAiLoading(prev => ({ ...prev, [index]: true }));
+        try {
             const token = localStorage.getItem('token');
-
-            const response = await fetch('http://localhost:6050/api/resume/projects', {
+            const response = await fetch('http://localhost:6050/api/ai/project-desc', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ projects: formattedProjects })
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ projectName, techStack: techStackInput, rawDesc })
             });
-
             const resData = await response.json();
+
             if (resData.success) {
-                nextStep();
+                // Insert high impact text inside targeted field matrix
+                setValue(`projects.${index}.description`, resData.description);
             } else {
-                alert(resData.message || "Something went wrong");
+                alert(resData.message || "AI failed to optimize description.");
             }
         } catch (error) {
-            console.error("API Error:", error);
-            alert("Server connection failed.");
+            console.error("AI Project Desc Error:", error);
+            alert("Failed to establish secure cloud connection to AI.");
         } finally {
-            setLoading(false);
+            setAiLoading(prev => ({ ...prev, [index]: false }));
         }
+    };
+
+    const onSubmit = (data) => {
+        const formattedProjects = data.projects.map(proj => ({
+            ...proj,
+            techStack: proj.techStackInput ? proj.techStackInput.split(',').map(s => s.trim()).filter(s => s !== '') : []
+        }));
+
+        // State update and transient dynamic routing forward
+        updateResumeData('projects', formattedProjects);
+        nextStep();
     };
 
     return (
@@ -106,8 +136,21 @@ export default function ProjectsForm() {
                             </div>
 
                             <div className="col-12">
-                                <label className="form-label small text-light opacity-75 fw-medium mb-1" style={{ fontSize: '0.75rem' }}>Project Description *</label>
-                                <textarea {...register(`projects.${index}.description`, { required: true })} className="form-control glass-input py-1.5" rows="2" placeholder="Brief description of project core engineering features..." style={{ fontSize: '0.85rem', resize: 'none' }} />
+                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                    <label className="form-label small text-light opacity-75 fw-medium mb-0" style={{ fontSize: '0.75rem' }}>Project Description *</label>
+
+                                    {/* Responsive Magic AI Enhancement Dispatcher */}
+                                    <button
+                                        type="button"
+                                        disabled={aiLoading[index]}
+                                        onClick={() => handleAIProjectDesc(index)}
+                                        className="btn btn-xs btn-outline-info py-0 px-2"
+                                        style={{ fontSize: '0.7rem', borderRadius: '6px' }}
+                                    >
+                                        {aiLoading[index] ? '✨ Enhancing...' : '✨ Optimize with AI'}
+                                    </button>
+                                </div>
+                                <textarea {...register(`projects.${index}.description`, { required: true })} className="form-control glass-input py-1.5" rows="3" placeholder="Write basic actions, then click 'Optimize with AI' to automatically transform it into highly professional ATS points..." style={{ fontSize: '0.85rem', resize: 'none' }} />
                             </div>
                         </div>
                     </div>
@@ -116,8 +159,8 @@ export default function ProjectsForm() {
 
             <div className="d-flex justify-content-between mt-3 pt-2 border-top border-secondary border-opacity-25">
                 <button type="button" onClick={prevStep} className="btn btn-secondary py-1.5 px-4" style={{ fontSize: '0.9rem', borderRadius: '10px' }}>Back</button>
-                <button type="submit" disabled={loading} className="btn btn-premium py-1.5 px-4" style={{ fontSize: '0.9rem' }}>
-                    {loading ? 'Saving...' : 'Save & Next'}
+                <button type="submit" className="btn btn-premium py-1.5 px-4" style={{ fontSize: '0.9rem' }}>
+                    Save & Next Section
                 </button>
             </div>
         </form>

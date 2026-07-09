@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Fixed: Added useEffect import
 import { useResumeStore } from '../../store/useResumeStore';
 
 export default function SkillsForm() {
     const { resumeData, updateResumeData, nextStep, prevStep } = useResumeStore();
     const [skills, setSkills] = useState(resumeData.skills || []);
+    const [suggestions, setSuggestions] = useState([]);
     const [skillInput, setSkillInput] = useState('');
-    const [loading, setLoading] = useState(false);
 
     const handleAddSkill = (e) => {
         e.preventDefault();
@@ -17,41 +17,39 @@ export default function SkillsForm() {
         }
     };
 
+    // Component load hote hi user ke job role ke hisab se top skills suggest karo
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                // Targetting centralized port 6050 consistently
+                const response = await fetch('http://localhost:6050/api/ai/skills', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ title: resumeData.personalInfo?.title || 'Software Engineer' })
+                });
+                const resData = await response.json();
+                if (resData.success) setSuggestions(resData.skills);
+            } catch (e) {
+                console.error("Failed to fetch suggestions:", e);
+            }
+        };
+        fetchSuggestions();
+    }, [resumeData.personalInfo?.title, updateResumeData]);
+
     const handleRemoveSkill = (skillToRemove) => {
         const updatedSkills = skills.filter(skill => skill !== skillToRemove);
         setSkills(updatedSkills);
         updateResumeData('skills', updatedSkills);
     };
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (skills.length === 0) {
             alert("Please add at least one skill.");
             return;
         }
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:6050/api/resume/skills', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ skills })
-            });
-
-            const resData = await response.json();
-            if (resData.success) {
-                nextStep();
-            } else {
-                alert(resData.message || "Something went wrong");
-            }
-        } catch (error) {
-            console.error("API Error:", error);
-            alert("Server connection failed.");
-        } finally {
-            setLoading(false);
-        }
+        // Optimized Architecture: API call removed, direct transient routing
+        nextStep();
     };
 
     return (
@@ -89,6 +87,32 @@ export default function SkillsForm() {
                 </div>
             </div>
 
+            {/* Fixed: Wrapped comment correctly in JSX braces */}
+            {suggestions.length > 0 && (
+                <div className="my-2">
+                    <span className="text-muted small d-block mb-1" style={{ fontSize: '0.75rem' }}>💡 Suggested for your role:</span>
+                    <div className="d-flex flex-wrap gap-1">
+                        {suggestions.map((sug, i) => (
+                            <button
+                                key={i}
+                                type="button"
+                                onClick={() => {
+                                    if (!skills.includes(sug)) {
+                                        const newSkills = [...skills, sug];
+                                        setSkills(newSkills);
+                                        updateResumeData('skills', newSkills);
+                                    }
+                                }}
+                                className="btn btn-dark btn-sm text-info py-0.5 px-2 border-secondary border-opacity-25"
+                                style={{ fontSize: '0.75rem', borderRadius: '15px', background: 'rgba(255,255,255,0.02)' }}
+                            >
+                                + {sug}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="d-flex flex-wrap gap-2 p-3 border border-secondary border-opacity-10 rounded-3 mb-3" style={{ background: 'rgba(0,0,0,0.2)', minHeight: '60px' }}>
                 {skills.length === 0 ? (
                     <span className="text-muted small my-auto">No skills added yet.</span>
@@ -123,11 +147,10 @@ export default function SkillsForm() {
                 <button
                     type="button"
                     onClick={handleSave}
-                    disabled={loading}
                     className="btn btn-premium py-1.5 px-4"
                     style={{ fontSize: '0.9rem' }}
                 >
-                    {loading ? 'Saving...' : 'Save & Next Section'}
+                    Save & Next Section
                 </button>
             </div>
         </div>

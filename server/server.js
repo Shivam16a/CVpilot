@@ -3,7 +3,8 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDb = require("./config/DB");
 const authroute = require("./routes/authRoutes");
-const resumeroute = require("./routes/resumeRoutes")
+const resumeroute = require("./routes/resumeRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 dotenv.config();
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(cors({
 
 app.use("/api/auth",authroute);
 app.use("/api/resume",resumeroute);
+app.use("/api/ai",aiRoutes);
 
 const PORT = process.env.PORT || 5000;
 

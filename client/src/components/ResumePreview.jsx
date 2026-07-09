@@ -32,7 +32,7 @@ export default function ResumePreview() {
             {currentStep === 8 && <FinalReviewStep />}
 
             <div className="d-flex justify-content-between align-items-center mb-2 px-1">
-                <span className="small text-muted d-flex align-items-center gap-1">
+                <span className="small text-white-50 d-flex align-items-center gap-1">
                     <span className="spinner-grow spinner-grow-sm text-success" style={{ width: '8px', height: '8px' }}></span>
                     Production Standard Sheet
                 </span>

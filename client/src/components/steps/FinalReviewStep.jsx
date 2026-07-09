@@ -16,7 +16,7 @@ export default function FinalReviewStep() {
                     <h4 className="fw-bold mb-1 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
                         🎉 Your Resume is Ready!
                     </h4>
-                    <p className="text-muted small mb-0">Review the final ATS standard print below before generating your master copy.</p>
+                    <p className="text-white-50 small mb-0">Review the final ATS standard print below before generating your master copy.</p>
                 </div>
 
                 {/* Control Action Buttons */}
