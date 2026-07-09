@@ -6,6 +6,9 @@ import SummaryForm from './steps/SummaryForm';
 import SkillsForm from './steps/SkillsForm';
 import EducationForm from './steps/EducationForm';
 import ExperienceForm from './steps/ExperienceForm';
+import ProjectsForm from './steps/ProjectsForm';
+import AdditionalInfoForm from './steps/AdditionalInfoForm';
+import FinalReviewStep from './steps/FinalReviewStep';
 import '../styles/dashboard.css';
 
 const totalSteps = 8;
@@ -20,6 +23,9 @@ export default function ResumeWizard() {
             case 3: return <SkillsForm />;
             case 4: return <EducationForm />;
             case 5: return <ExperienceForm />;
+            case 6: return <ProjectsForm />;
+            case 7: return <AdditionalInfoForm />;
+            case 8: return <FinalReviewStep />;
             default: return <PersonalInfoForm />;
         }
     };

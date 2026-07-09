@@ -13,7 +13,10 @@ export default function SummaryForm() {
     const onSubmit = async (data) => {
         setLoading(true);
         try {
-            updateResumeData('summary', data.summary);
+            // Strict extract string variable data
+            const pureSummary = typeof data === 'object' && data.summary ? data.summary : data;
+
+            updateResumeData('summary', pureSummary);
             const token = localStorage.getItem('token');
 
             const response = await fetch('http://localhost:6050/api/resume/summary', {
@@ -22,7 +25,7 @@ export default function SummaryForm() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ summary: data.summary })
+                body: JSON.stringify({ summary: pureSummary })
             });
 
             const resData = await response.json();
@@ -33,7 +36,6 @@ export default function SummaryForm() {
             }
         } catch (error) {
             console.error("API Error:", error);
-            alert("Server connection failed.");
         } finally {
             setLoading(false);
         }

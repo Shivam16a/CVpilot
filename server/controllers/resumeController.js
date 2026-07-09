@@ -104,6 +104,39 @@ const saveExperience = async (req, res) => {
     }
 };
 
+const saveProjects = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { projects } = req.body;
+
+        let resume = await Resume.findOne({ userId });
+        if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
+
+        resume.projects = projects;
+        await resume.save();
+        return res.status(200).json({ success: true, message: "Projects loaded", resume });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+const saveAdditional = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { certifications, languages } = req.body;
+
+        let resume = await Resume.findOne({ userId });
+        if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
+
+        resume.certifications = certifications;
+        resume.languages = languages;
+        await resume.save();
+        return res.status(200).json({ success: true, message: "Metadata compiled successfully", resume });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
 module.exports = {
-    savePersonalInfo, saveSummary, saveSkills, saveEducation, saveExperience
+    savePersonalInfo, saveSummary, saveSkills, saveEducation, saveExperience, saveProjects, saveAdditional
 };
