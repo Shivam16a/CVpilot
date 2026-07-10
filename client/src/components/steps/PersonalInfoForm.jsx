@@ -46,7 +46,7 @@ export default function PersonalInfoForm() {
                 <h4 className="fw-bold mb-0" style={{ background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                     Personal Information
                 </h4>
-                <p className="text-muted small mb-0" style={{ fontSize: '0.8rem' }}>Provide your contact coordinates below.</p>
+                <p className="text-white-50 small mb-0" style={{ fontSize: '0.8rem' }}>Provide your contact coordinates below.</p>
             </div>
             <hr className="border-secondary opacity-25 my-2" />
 
@@ -117,6 +117,16 @@ export default function PersonalInfoForm() {
                         placeholder="linkedin.com/in/username"
                         className="form-control glass-input py-1.5"
                         style={{ fontSize: '0.85rem' }}
+                    />
+                </div>
+
+                <div className="col-12 col-sm-6">
+                    <label className="form-label small text-light opacity-75 fw-medium mb-1" style={{ fontSize: '0.75rem' }}>Portfolio URL</label>
+                    <input
+                        {...register('portfolio')}
+                        placeholder = "portfolio url"
+                        className = "form-control glass-input py-1.5"
+                        style = {{ fontSize: '0.85rem' }}
                     />
                 </div>
 

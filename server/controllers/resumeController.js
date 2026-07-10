@@ -137,6 +137,19 @@ const saveAdditional = async (req, res) => {
     }
 };
 
+const getResumeData = async (req, res) => {
+    try {
+        const resume = await Resume.findOne({ userId: req.user.id });
+        if (!resume) {
+            return res.status(200).json({ success: false, message: "No previous resume found" });
+        }
+        return res.status(200).json({ success: true, resume });
+    } catch (error) {
+        console.error("Fetch Resume Error:", error);
+        res.status(500).json({ success: false, message: "Database retrieval failed" });
+    }
+};
+
 module.exports = {
-    savePersonalInfo, saveSummary, saveSkills, saveEducation, saveExperience, saveProjects, saveAdditional
+    savePersonalInfo, saveSummary, saveSkills, saveEducation, saveExperience, saveProjects, saveAdditional, getResumeData
 };

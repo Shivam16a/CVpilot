@@ -1,5 +1,6 @@
 // client/src/components/ResumePreview.jsx
 import React from 'react';
+import { Link } from 'react-router-dom'
 import { useResumeStore } from '../store/useResumeStore';
 import FinalReviewStep from './steps/FinalReviewStep';
 
@@ -60,6 +61,8 @@ export default function ResumePreview() {
                     <div className="d-flex flex-wrap justify-content-center gap-2 mt-1 text-muted" style={{ fontSize: '10px' }}>
                         {personalInfo?.email && <span>{renderSafeText(personalInfo.email)}</span>}
                         {personalInfo?.phone && <span>• {renderSafeText(personalInfo.phone)}</span>}
+                        {personalInfo?.linkedin && <Link to={renderSafeText(personalInfo.linkedin)} className="text-primary fw-semibold text-decoration-none"><i className="fab fa-linkedin"></i> Linkdin</Link>}
+                        {personalInfo?.github && <Link to={renderSafeText(personalInfo.github)} className="text-muted fw-semibold text-decoration-none"><i className="fab fa-github-square"></i> GitHub</Link>}
                         {personalInfo?.location && <span>• {renderSafeText(personalInfo.location)}</span>}
                     </div>
                 </div>
@@ -107,12 +110,12 @@ export default function ResumePreview() {
                 {/* 5. PROJECTS */}
                 {projects && getSafeArray(projects).length > 0 && (
                     <div className="mb-3">
-                        <h6 className="fw-bold text-uppercase border-bottom border-dark pb-1 mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>Key Projects</h6>
+                        <h6 className="fw-bold text-uppercase border-bottom border-dark pb-1 mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>Projects</h6>
                         {getSafeArray(projects).map((proj, index) => (
                             <div key={index} className="mb-2">
                                 <div className="d-flex justify-content-between fw-bold text-dark">
                                     <span>{renderSafeText(proj.name)} {proj.techStack && <span className="fw-normal text-muted" style={{ fontSize: '10px' }}>({getSafeArray(proj.techStack).join(', ')})</span>}</span>
-                                    <span className="fw-normal text-muted" style={{ fontSize: '10px' }}>{renderSafeText(proj.liveLink)}</span>
+                                    <span className="fw-normal text-muted" style={{ fontSize: '10px' }}><Link to={renderSafeText(proj.liveLink)} className='text-muted fw-normal text-decoration-none'>{renderSafeText(proj.liveLink)}</Link></span>
                                 </div>
                                 <p className="m-0 text-secondary mt-0.5">{renderSafeText(proj.description)}</p>
                             </div>

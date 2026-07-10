@@ -40,7 +40,7 @@ export default function ResumeWizard() {
                         <span className="badge bg-dark border border-secondary px-2.5 py-1.5 rounded-pill text-info small">
                             Step {currentStep} of {totalSteps}
                         </span>
-                        <span className="text-muted small">
+                        <span className="text-white-50 small">
                             {progressPercentage}% Completed
                         </span>
                     </div>
