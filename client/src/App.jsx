@@ -9,6 +9,7 @@ import ResetPassword from "./pages/ResetPassword";
 
 // Naya page component import karo
 import BuildResume from "./pages/BuildResume";
+import TemplateSelection from "./pages/TemplateSelection";
 
 function App() {
   return (
@@ -19,11 +20,11 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/layout" element={<AuthLayout />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/select-template" element={<TemplateSelection />} />
 
       {/* 🚀 New Dynamic Dashboard/Resume Builder Route */}
       <Route path="/build-resume" element={<BuildResume />} />
 
-      {/* Fallback configuration (Optional): Agar user galat route par jaye toh login pr bhej do */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
