@@ -1,0 +1,104 @@
+/* ==========================================================================
+   CV PILOT - SINGLE MASTER GLOBAL STYLESHEET
+   ========================================================================== */
+
+:root {
+    --bg-dark: #0b0f19;
+    --card-glass: rgba(15, 23, 42, 0.75);
+    --accent-cyan: #38bdf8;
+    --accent-blue: #0284c7;
+    --border-subtle: rgba(255, 255, 255, 0.12);
+}
+
+/* Base Body Styling */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-dark) !important;
+    color: #ffffff !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+}
+
+/* 1. Global Glassmorphism Containers (Login, Forms, Review Cards) */
+.glass-card,
+.login-card,
+.auth-card-modern,
+.auth-card {
+    background: var(--card-glass) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
+    color: #ffffff !important;
+}
+
+/* 2. Dark Glass Form Inputs Override */
+.glass-input,
+.futuristic-input,
+.form-control,
+.form-select {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border-radius: 10px !important;
+    font-size: 0.88rem !important;
+}
+
+.glass-input:focus,
+.futuristic-input:focus,
+.form-control:focus,
+.form-select:focus {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: var(--accent-cyan) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.25) !important;
+}
+
+.form-control::placeholder,
+.glass-input::placeholder,
+.futuristic-input::placeholder {
+    color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* 3. Input Group Icon Badges */
+.futuristic-icon,
+.input-group-text {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: var(--accent-cyan) !important;
+}
+
+/* 4. Glowing Titles & Premium Gradient Buttons */
+.glow-title {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #ffffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.btn-premium,
+.futuristic-btn {
+    background: linear-gradient(135deg, var(--accent-blue) 0%, #0369a1 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 10px !important;
+    font-weight: 600;
+    transition: all 0.3s ease !important;
+}
+
+.btn-premium:hover,
+.futuristic-btn:hover {
+    background: linear-gradient(135deg, #0369a1 0%, var(--accent-blue) 100%) !important;
+    box-shadow: 0 0 15px rgba(2, 132, 199, 0.4) !important;
+}
+
+/* Print Utilities */
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+}

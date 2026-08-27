@@ -1,7 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "../styles/login.css"
 
 function Login() {
     const navigate = useNavigate();
@@ -9,7 +8,7 @@ function Login() {
         email: "",
         password: "",
     });
-    const [loading, setLoading] = useState(false); // Action loading state
+    const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     const handleChange = (e) => {
@@ -31,11 +30,12 @@ function Login() {
 
             localStorage.setItem("token", res.data.token);
             alert("Login Successful 🎉");
-            navigate("/layout");
+            // Redirection route fixed to /select-template
+            navigate("/select-template");
         } catch (error) {
             alert(
                 error.response?.data?.message ||
-                "Login Failed "
+                "Login Failed"
             );
         } finally {
             setLoading(false);
@@ -43,136 +43,117 @@ function Login() {
     };
 
     return (
-        <div className="login-page d-flex align-items-center justify-content-center">
+        <div className="login-page d-flex align-items-center justify-content-center min-vh-100">
             <div className="container">
                 <div className="row justify-content-center">
                     <div className="col-xl-4 col-lg-5 col-md-7 col-sm-10">
 
-                        <div className="card login-card border-0 shadow-lg">
+                        {/* Clean Glassmorphism Card */}
+                        <div className="login-card border-0 p-4 p-md-5">
 
-                            <div className="card-body p-4 p-md-5">
+                            <h1 className="text-center glow-title mb-2">
+                                Welcome Back
+                            </h1>
 
-                                <h1 className="text-center glow-title mb-2">
-                                    Welcome Back
-                                </h1>
+                            <p className="text-center text-white-50 small mb-4">
+                                Login to Continue 🚀
+                            </p>
 
-                                <p className="text-center text-secondary mb-4">
-                                    Login to Continue 🚀
-                                </p>
+                            <form onSubmit={submitHandler}>
 
-                                <form onSubmit={submitHandler}>
+                                {/* Email */}
+                                <div className="mb-3">
+                                    <label className="form-label text-white small fw-medium mb-1">
+                                        Email Address
+                                    </label>
 
-                                    {/* Email */}
-
-                                    <div className="mb-3">
-
-                                        <label className="form-label text-light">
-                                            Email Address
-                                        </label>
-
-                                        <div className="input-group">
-
-                                            <span className="input-group-text futuristic-icon">
-                                                <i className="bi bi-envelope-fill"></i>
-                                            </span>
-
-                                            <input
-                                                type="email"
-                                                className="form-control futuristic-input"
-                                                placeholder="Enter your email"
-                                                name="email"
-                                                value={formData.email}
-                                                onChange={handleChange}
-                                                required
-                                            />
-
-                                        </div>
-
+                                    <div className="input-group">
+                                        <span className="input-group-text futuristic-icon">
+                                            <i className="bi bi-envelope-fill"></i>
+                                        </span>
+                                        <input
+                                            type="email"
+                                            className="form-control futuristic-input"
+                                            placeholder="Enter your email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            required
+                                        />
                                     </div>
-
-                                    {/* Password */}
-
-                                    <div className="mb-4">
-
-                                        <label className="form-label text-light">
-                                            Password
-                                        </label>
-
-                                        <div className="input-group">
-
-                                            <span className="input-group-text futuristic-icon">
-                                                <i className="bi bi-lock-fill"></i>
-                                            </span>
-
-                                            <input
-                                                type={showPassword ? "text" : "password"}
-                                                className="form-control futuristic-input"
-                                                placeholder="Enter password"
-                                                name="password"
-                                                value={formData.password}
-                                                onChange={handleChange}
-                                                required
-                                            />
-                                            <button
-                                                type="button"
-                                                className="input-group-text futuristic-icon"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                            >
-                                                <i
-                                                    className={`bi ${showPassword ? "bi-eye-slash-fill" : "bi-eye-fill"
-                                                        }`}
-                                                ></i>
-                                            </button>
-                                        </div>
-
-                                    </div>
-                                    {/* Forgot Password */}
-
-                                    <div className="d-flex justify-content-end mb-4">
-                                        <button
-                                            type="button"
-                                            className="btn btn-link forgot-link p-0"
-                                            onClick={() => navigate("/reset-password")}
-                                        >
-                                            Forgot Password?
-                                        </button>
-                                    </div>
-                                    
-                                    <button
-                                        type="submit"
-                                        className="btn futuristic-btn w-100"
-                                        disabled={loading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm me-2"></span>
-                                                Logging In...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="bi bi-box-arrow-in-right me-2"></i>
-                                                Login
-                                            </>
-                                        )}
-                                    </button>
-
-                                </form>
-
-                                <div className="text-center mt-4">
-
-                                    <p className="text-secondary mb-2">
-                                        Don't have an account?
-                                    </p>
-
-                                    <button
-                                        className="btn btn-link text-info text-decoration-none"
-                                        onClick={() => navigate("/register")}
-                                    >
-                                        Create Account
-                                    </button>
-
                                 </div>
 
+                                {/* Password */}
+                                <div className="mb-3">
+                                    <label className="form-label text-white small fw-medium mb-1">
+                                        Password
+                                    </label>
+
+                                    <div className="input-group">
+                                        <span className="input-group-text futuristic-icon">
+                                            <i className="bi bi-lock-fill"></i>
+                                        </span>
+
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            className="form-control futuristic-input"
+                                            placeholder="Enter password"
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            className="input-group-text futuristic-icon"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                        >
+                                            <i className={`bi ${showPassword ? "bi-eye-slash-fill" : "bi-eye-fill"}`}></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Forgot Password */}
+                                <div className="d-flex justify-content-end mb-4">
+                                    <button
+                                        type="button"
+                                        className="btn btn-link p-0 text-decoration-none text-info small"
+                                        onClick={() => navigate("/reset-password")}
+                                    >
+                                        Forgot Password?
+                                    </button>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="btn futuristic-btn w-100 py-2.5 fw-bold"
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2"></span>
+                                            Logging In...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="bi bi-box-arrow-in-right me-2"></i>
+                                            Login
+                                        </>
+                                    )}
+                                </button>
+
+                            </form>
+
+                            <div className="text-center mt-4">
+                                <p className="text-white-50 small mb-1">
+                                    Don't have an account?
+                                </p>
+                                <button
+                                    className="btn btn-link text-info text-decoration-none fw-semibold p-0"
+                                    onClick={() => navigate("/register")}
+                                >
+                                    Create Account
+                                </button>
                             </div>
 
                         </div>

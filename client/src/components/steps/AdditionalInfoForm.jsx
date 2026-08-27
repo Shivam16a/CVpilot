@@ -1,114 +1,163 @@
+// client/src/components/steps/AdditionalInfoForm.jsx
 import React, { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
 import { useResumeStore } from '../../store/useResumeStore';
 
 export default function AdditionalInfoForm() {
     const { resumeData, updateResumeData, nextStep, prevStep } = useResumeStore();
-    const [loading, setLoading] = useState(false);
 
-    const { register, control, handleSubmit } = useForm({
-        defaultValues: {
-            certifications: resumeData.certifications.length > 0 ? resumeData.certifications : [{ name: '', organization: '', issueDate: '' }],
-            languages: resumeData.languages.length > 0 ? resumeData.languages : [{ name: '', level: 'Fluent' }]
-        }
-    });
+    // Detailed Certifications State
+    const [certifications, setCertifications] = useState(
+        resumeData.certifications && resumeData.certifications.length > 0
+            ? resumeData.certifications
+            : [{ name: '', organization: '', issueDate: '', link: '' }]
+    );
 
-    const { fields: certFields, append: appendCert, remove: removeCert } = useFieldArray({ control, name: "certifications" });
-    const { fields: langFields, append: appendLang, remove: removeLang } = useFieldArray({ control, name: "languages" });
+    // Languages State
+    const [languages, setLanguages] = useState(
+        resumeData.languages && resumeData.languages.length > 0
+            ? resumeData.languages
+            : [{ name: '', level: 'Fluent' }]
+    );
 
-    const onSubmit = async (data) => {
-        setLoading(true);
-        try {
-            updateResumeData('certifications', data.certifications);
-            updateResumeData('languages', data.languages);
-            const token = localStorage.getItem('token');
+    const addCertification = () => {
+        setCertifications([...certifications, { name: '', organization: '', issueDate: '', link: '' }]);
+    };
 
-            const response = await fetch('http://localhost:6050/api/resume/additional', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ certifications: data.certifications, languages: data.languages })
-            });
+    const removeCertification = (index) => {
+        setCertifications(certifications.filter((_, i) => i !== index));
+    };
 
-            const resData = await response.json();
-            if (resData.success) {
-                nextStep();
-            } else {
-                alert(resData.message || "Something went wrong");
-            }
-        } catch (error) {
-            console.error("API Error:", error);
-            alert("Server connection failed.");
-        } finally {
-            setLoading(false);
-        }
+    const handleCertChange = (index, field, value) => {
+        const updated = [...certifications];
+        updated[index][field] = value;
+        setCertifications(updated);
+    };
+
+    const addLanguage = () => {
+        setLanguages([...languages, { name: '', level: 'Fluent' }]);
+    };
+
+    const handleLangChange = (index, field, value) => {
+        const updated = [...languages];
+        updated[index][field] = value;
+        setLanguages(updated);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        updateResumeData('certifications', certifications);
+        updateResumeData('languages', languages);
+        nextStep(); // Goes to Final Review Step 8
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="mb-2">
-                <h4 className="fw-bold mb-0" style={{ background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    Certifications & Languages
-                </h4>
-                <p className="text-muted small mb-0" style={{ fontSize: '0.8rem' }}>Provide metadata regarding non-academic achievements.</p>
-            </div>
-            <hr className="border-secondary opacity-25 my-2" />
+        <form onSubmit={handleSubmit}>
+            <h4 className="fw-bold mb-3 glow-title">Certifications & Languages</h4>
 
-            <div style={{ maxHeight: '410px', overflowY: 'auto', paddingRight: '5px' }}>
-
-                {/* Certifications Block */}
-                <div className="d-flex justify-content-between align-items-center mt-2 mb-2">
-                    <h6 className="text-info mb-0 fw-semibold">Certifications</h6>
-                    <button type="button" onClick={() => appendCert({ name: '', organization: '', issueDate: '' })} className="btn btn-outline-info btn-sm py-0.5 px-2" style={{ fontSize: '0.75rem', borderRadius: '6px' }}>+ Add Certificate</button>
+            {/* Certifications Section */}
+            <div className="mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h6 className="text-info mb-0">📜 Professional Certifications</h6>
+                    <button type="button" onClick={addCertification} className="btn btn-outline-info btn-sm py-1">
+                        ➕ Add Certification
+                    </button>
                 </div>
-                {certFields.map((field, index) => (
-                    <div key={field.id} className="row g-2 mb-2 p-2 border border-secondary border-opacity-10 rounded-3 align-items-end">
-                        <div className="col-12 col-sm-5">
-                            <input {...register(`certifications.${index}.name`)} className="form-control glass-input py-1" placeholder="Certificate Name" style={{ fontSize: '0.8rem' }} />
-                        </div>
-                        <div className="col-12 col-sm-4">
-                            <input {...register(`certifications.${index}.organization`)} className="form-control glass-input py-1" placeholder="Issuer Organization" style={{ fontSize: '0.8rem' }} />
-                        </div>
-                        <div className="col-9 col-sm-2">
-                            <input type="month" {...register(`certifications.${index}.issueDate`)} className="form-control glass-input py-1" style={{ fontSize: '0.8rem' }} />
-                        </div>
-                        <div className="col-3 col-sm-1 text-end">
-                            <button type="button" onClick={() => removeCert(index)} className="btn btn-sm btn-outline-danger py-1" style={{ fontSize: '0.75rem' }}>X</button>
+
+                {certifications.map((cert, idx) => (
+                    <div key={idx} className="p-3 mb-2 rounded border border-secondary border-opacity-25 bg-dark bg-opacity-25 position-relative">
+                        {certifications.length > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => removeCertification(idx)}
+                                className="btn btn-danger btn-sm position-absolute top-0 end-0 m-2 py-0 px-1.5"
+                                style={{ fontSize: '0.7rem' }}
+                            >
+                                ✕
+                            </button>
+                        )}
+                        <div className="row g-2">
+                            <div className="col-md-6">
+                                <label className="form-label x-small text-white-50 mb-1" style={{ fontSize: '0.75rem' }}>Certificate Title *</label>
+                                <input
+                                    required
+                                    className="form-control glass-input text-white"
+                                    placeholder="e.g. Google Data Analytics Professional Certificate"
+                                    value={cert.name || ''}
+                                    onChange={(e) => handleCertChange(idx, 'name', e.target.value)}
+                                />
+                            </div>
+                            <div className="col-md-6">
+                                <label className="form-label x-small text-white-50 mb-1" style={{ fontSize: '0.75rem' }}>Issuing Organization</label>
+                                <input
+                                    className="form-control glass-input text-white"
+                                    placeholder="e.g. Coursera / Google / Tableau"
+                                    value={cert.organization || ''}
+                                    onChange={(e) => handleCertChange(idx, 'organization', e.target.value)}
+                                />
+                            </div>
+                            <div className="col-md-4">
+                                <label className="form-label x-small text-white-50 mb-1" style={{ fontSize: '0.75rem' }}>Issue Date</label>
+                                <input
+                                    className="form-control glass-input text-white"
+                                    placeholder="e.g. Aug 2023"
+                                    value={cert.issueDate || ''}
+                                    onChange={(e) => handleCertChange(idx, 'issueDate', e.target.value)}
+                                />
+                            </div>
+                            <div className="col-md-8">
+                                <label className="form-label x-small text-white-50 mb-1" style={{ fontSize: '0.75rem' }}>Credential URL / Link</label>
+                                <input
+                                    className="form-control glass-input text-white"
+                                    placeholder="https://coursera.org/verify/..."
+                                    value={cert.link || ''}
+                                    onChange={(e) => handleCertChange(idx, 'link', e.target.value)}
+                                />
+                            </div>
                         </div>
                     </div>
                 ))}
+            </div>
 
-                {/* Languages Block */}
-                <div className="d-flex justify-content-between align-items-center mt-3 mb-2">
-                    <h6 className="text-info mb-0 fw-semibold">Languages</h6>
-                    <button type="button" onClick={() => appendLang({ name: '', level: 'Fluent' })} className="btn btn-outline-info btn-sm py-0.5 px-2" style={{ fontSize: '0.75rem', borderRadius: '6px' }}>+ Add Language</button>
+            {/* Languages Section */}
+            <div className="mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h6 className="text-info mb-0">🗣️ Languages Known</h6>
+                    <button type="button" onClick={addLanguage} className="btn btn-outline-info btn-sm py-1">
+                        ➕ Add Language
+                    </button>
                 </div>
-                {langFields.map((field, index) => (
-                    <div key={field.id} className="row g-2 mb-2 p-2 border border-secondary border-opacity-10 rounded-3 align-items-end">
-                        <div className="col-6 col-sm-6">
-                            <input {...register(`languages.${index}.name`)} className="form-control glass-input py-1" placeholder="Language (e.g. English)" style={{ fontSize: '0.8rem' }} />
+                {languages.map((lang, idx) => (
+                    <div key={idx} className="row g-2 mb-2">
+                        <div className="col-md-6">
+                            <input
+                                className="form-control glass-input text-white"
+                                placeholder="e.g. English"
+                                value={lang.name || ''}
+                                onChange={(e) => handleLangChange(idx, 'name', e.target.value)}
+                            />
                         </div>
-                        <div className="col-4 col-sm-5">
-                            <select {...register(`languages.${index}.level`)} className="form-select glass-input py-1" style={{ fontSize: '0.8rem' }}>
-                                <option value="Basic">Basic</option>
-                                <option value="Intermediate">Intermediate</option>
-                                <option value="Fluent">Fluent</option>
+                        <div className="col-md-6">
+                            <select
+                                className="form-select bg-dark text-white border-secondary"
+                                value={lang.level || 'Fluent'}
+                                onChange={(e) => handleLangChange(idx, 'level', e.target.value)}
+                            >
                                 <option value="Native">Native</option>
+                                <option value="Fluent">Fluent</option>
+                                <option value="Professional">Professional</option>
+                                <option value="Basic">Basic</option>
                             </select>
                         </div>
-                        <div className="col-2 col-sm-1 text-end">
-                            <button type="button" onClick={() => removeLang(index)} className="btn btn-sm btn-outline-danger py-1" style={{ fontSize: '0.75rem' }}>X</button>
-                        </div>
                     </div>
                 ))}
             </div>
 
-            <div className="d-flex justify-content-between mt-3 pt-2 border-top border-secondary border-opacity-25">
-                <button type="button" onClick={prevStep} className="btn btn-secondary py-1.5 px-4" style={{ fontSize: '0.9rem', borderRadius: '10px' }}>Back</button>
-                <button type="submit" disabled={loading} className="btn btn-premium py-1.5 px-4" style={{ fontSize: '0.9rem' }}>
-                    {loading ? 'Saving...' : 'Save & Next'}
+            <div className="d-flex justify-content-between mt-4">
+                <button type="button" onClick={prevStep} className="btn btn-outline-light px-4 py-1.5" style={{ borderRadius: '8px' }}>
+                    ⬅️ Back
+                </button>
+                <button type="submit" className="btn btn-info text-dark fw-bold px-4 py-1.5" style={{ borderRadius: '8px' }}>
+                    Review & Preview ➡️
                 </button>
             </div>
         </form>

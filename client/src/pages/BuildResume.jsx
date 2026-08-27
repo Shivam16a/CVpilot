@@ -6,11 +6,17 @@ import ResumePreview from '../components/ResumePreview';
 import { useResumeStore } from '../store/useResumeStore';
 
 export default function BuildResume() {
-    const { currentStep, setFullResume, setStep } = useResumeStore();
+    const { currentStep, setFullResume, setStep, isNewResumeMode } = useResumeStore();
     const [pageLoading, setPageLoading] = useState(true);
 
     useEffect(() => {
         const checkExistingResume = async () => {
+            // 🚨 CRITICAL FIX: Agar user new resume bana raha hai, toh DB se old fetch SKIP kar do
+            if (isNewResumeMode) {
+                setPageLoading(false);
+                return;
+            }
+
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('http://localhost:6050/api/resume/get-resume', {
@@ -18,11 +24,9 @@ export default function BuildResume() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const resData = await response.json();
-                
+
                 if (resData.success && resData.resume) {
-                    // 1. Local global store me data load karo
                     setFullResume(resData.resume);
-                    // 2. Direct Step 8 (Final Preview Canvas) par jump karo
                     setStep(8);
                 }
             } catch (error) {
@@ -31,8 +35,9 @@ export default function BuildResume() {
                 setPageLoading(false);
             }
         };
+
         checkExistingResume();
-    }, [setFullResume, setStep]);
+    }, [setFullResume, setStep, isNewResumeMode]);
 
     if (pageLoading) {
         return (
@@ -54,12 +59,9 @@ export default function BuildResume() {
                         <ResumePreview />
                     </div>
                 ) : (
-                    <>
-                        <div className="col-12 col-xl-10">
-                            <ResumeWizard />
-                        </div>
-                        
-                    </>
+                    <div className="col-12 col-xl-10">
+                        <ResumeWizard />
+                    </div>
                 )}
             </div>
         </DashboardLayout>

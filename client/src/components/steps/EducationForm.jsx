@@ -1,171 +1,140 @@
+// client/src/components/steps/EducationForm.jsx
 import React, { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
 import { useResumeStore } from '../../store/useResumeStore';
 
 export default function EducationForm() {
     const { resumeData, updateResumeData, nextStep, prevStep } = useResumeStore();
-    const [loading, setLoading] = useState(false);
+    const [education, setEducation] = useState(
+        resumeData.education && resumeData.education.length > 0
+            ? resumeData.education
+            : [{ degree: '', course: '', institute: '', location: '', startDate: '', endDate: '', score: '' }]
+    );
 
-    const { register, control, handleSubmit, watch, formState: { errors } } = useForm({
-        defaultValues: {
-            education: resumeData.education.length > 0 ? resumeData.education : [{
-                degree: '', course: '', institute: '', location: '', startDate: '', endDate: '', score: '', isCurrent: false
-            }]
-        }
-    });
+    const addEducation = () => {
+        setEducation([
+            ...education,
+            { degree: '', course: '', institute: '', location: '', startDate: '', endDate: '', score: '' }
+        ]);
+    };
 
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: "education"
-    });
+    const removeEducation = (index) => {
+        setEducation(education.filter((_, i) => i !== index));
+    };
 
-    const watchAllFields = watch("education");
+    const handleChange = (index, field, value) => {
+        const updated = [...education];
+        updated[index][field] = value;
+        setEducation(updated);
+    };
 
-    const onSubmit = async (data) => {
-        setLoading(true);
-        try {
-            updateResumeData('education', data.education);
-            const token = localStorage.getItem('token');
-
-            const response = await fetch('http://localhost:6050/api/resume/education', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ education: data.education })
-            });
-
-            const resData = await response.json();
-            if (resData.success) {
-                nextStep();
-            } else {
-                alert(resData.message || "Something went wrong");
-            }
-        } catch (error) {
-            console.error("API Error:", error);
-            alert("Server connection failed.");
-        } finally {
-            setLoading(false);
-        }
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        updateResumeData('education', education);
+        nextStep();
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="mb-2 d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 className="fw-bold mb-0" style={{ background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        Education Timeline
-                    </h4>
-                    <p className="text-muted small mb-0" style={{ fontSize: '0.8rem' }}>Add your academic qualifications details logically.</p>
-                </div>
-                <button
-                    type="button"
-                    onClick={() => append({ degree: '', course: '', institute: '', location: '', startDate: '', endDate: '', score: '', isCurrent: false })}
-                    className="btn btn-premium py-1 px-3 btn-sm"
-                    style={{ fontSize: '0.8rem' }}
-                >
-                    + Add Education
+        <form onSubmit={handleSubmit}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h4 className="fw-bold mb-0 glow-title">Education Qualifications</h4>
+                <button type="button" onClick={addEducation} className="btn btn-outline-info btn-sm">
+                    ➕ Add Education
                 </button>
             </div>
-            <hr className="border-secondary opacity-25 my-2" />
 
-            <div style={{ maxHeight: '420px', overflowY: 'auto', paddingRight: '5px' }}>
-                {fields.map((field, index) => (
-                    <div key={field.id} className="p-3 mb-3 border border-secondary border-opacity-10 rounded-3 position-relative" style={{ background: 'rgba(255,255,255,0.01)' }}>
-                        {fields.length > 1 && (
-                            <button
-                                type="button"
-                                onClick={() => remove(index)}
-                                className="btn btn-danger btn-sm position-absolute"
-                                style={{ top: '10px', right: '10px', fontSize: '0.75rem', borderRadius: '6px' }}
-                            >
-                                Remove
-                            </button>
-                        )}
+            {education.map((edu, idx) => (
+                <div key={idx} className="p-3 mb-3 rounded border border-secondary border-opacity-25 bg-dark bg-opacity-25 position-relative">
+                    {education.length > 1 && (
+                        <button
+                            type="button"
+                            onClick={() => removeEducation(idx)}
+                            className="btn btn-danger btn-sm position-absolute top-0 end-0 m-2 py-0 px-1.5"
+                            style={{ fontSize: '0.75rem' }}
+                        >
+                            ✕
+                        </button>
+                    )}
 
-                        <div className="row g-2">
-                            <div className="col-12 col-sm-6">
-                                <label className="form-label small text-light opacity-75 fw-medium mb-1" style={{ fontSize: '0.75rem' }}>Degree *</label>
-                                <input
-                                    {...register(`education.${index}.degree`, { required: 'Required' })}
-                                    className="form-control glass-input py-1.5"
-                                    placeholder="e.g. B.Tech, BSC"
-                                    style={{ fontSize: '0.85rem' }}
-                                />
-                            </div>
+                    <div className="row g-2">
+                        <div className="col-md-6">
+                            <label className="form-label small text-white-50 mb-1">Degree / Qualification *</label>
+                            <input
+                                required
+                                className="form-control glass-input text-white"
+                                placeholder="e.g. Bachelor of Science (B.Sc)"
+                                value={edu.degree}
+                                onChange={(e) => handleChange(idx, 'degree', e.target.value)}
+                            />
+                        </div>
+                        <div className="col-md-6">
+                            <label className="form-label small text-white-50 mb-1">Field of Study / Course *</label>
+                            <input
+                                required
+                                className="form-control glass-input text-white"
+                                placeholder="e.g. Statistics and Mathematics"
+                                value={edu.course}
+                                onChange={(e) => handleChange(idx, 'course', e.target.value)}
+                            />
+                        </div>
+                        <div className="col-md-6">
+                            <label className="form-label small text-white-50 mb-1">Institute / University *</label>
+                            <input
+                                required
+                                className="form-control glass-input text-white"
+                                placeholder="e.g. St. Xavier's College"
+                                value={edu.institute}
+                                onChange={(e) => handleChange(idx, 'institute', e.target.value)}
+                            />
+                        </div>
 
-                            <div className="col-12 col-sm-6">
-                                <label className="form-label small text-light opacity-75 fw-medium mb-1" style={{ fontSize: '0.75rem' }}>Course / Specialization *</label>
-                                <input
-                                    {...register(`education.${index}.course`, { required: 'Required' })}
-                                    className="form-control glass-input py-1.5"
-                                    placeholder="e.g. Computer Science"
-                                    style={{ fontSize: '0.85rem' }}
-                                />
-                            </div>
+                        {/* 🚀 NEW: Institute Location Field */}
+                        <div className="col-md-6">
+                            <label className="form-label small text-white-50 mb-1">Institute Location</label>
+                            <input
+                                className="form-control glass-input text-white"
+                                placeholder="e.g. Kolkata, India"
+                                value={edu.location || ''}
+                                onChange={(e) => handleChange(idx, 'location', e.target.value)}
+                            />
+                        </div>
 
-                            <div className="col-12 col-sm-8">
-                                <label className="form-label small text-light opacity-75 fw-medium mb-1" style={{ fontSize: '0.75rem' }}>College / University *</label>
-                                <input
-                                    {...register(`education.${index}.institute`, { required: 'Required' })}
-                                    className="form-control glass-input py-1.5"
-                                    placeholder="e.g. IIT Delhi"
-                                    style={{ fontSize: '0.85rem' }}
-                                />
-                            </div>
-
-                            <div className="col-12 col-sm-4">
-                                <label className="form-label small text-light opacity-75 fw-medium mb-1" style={{ fontSize: '0.75rem' }}>CGPA / % *</label>
-                                <input
-                                    {...register(`education.${index}.score`, { required: 'Required' })}
-                                    className="form-control glass-input py-1.5"
-                                    placeholder="e.g. 9.2 or 85%"
-                                    style={{ fontSize: '0.85rem' }}
-                                />
-                            </div>
-
-                            <div className="col-12 col-sm-4">
-                                <label className="form-label small text-light opacity-75 fw-medium mb-1" style={{ fontSize: '0.75rem' }}>Start Date *</label>
-                                <input
-                                    type="month"
-                                    {...register(`education.${index}.startDate`, { required: 'Required' })}
-                                    className="form-control glass-input py-1.5"
-                                    style={{ fontSize: '0.85rem' }}
-                                />
-                            </div>
-
-                            <div className="col-12 col-sm-4">
-                                <label className="form-label small text-light opacity-75 fw-medium mb-1" style={{ fontSize: '0.75rem' }}>End Date</label>
-                                <input
-                                    type="month"
-                                    disabled={watchAllFields?.[index]?.isCurrent}
-                                    {...register(`education.${index}.endDate`)}
-                                    className="form-control glass-input py-1.5"
-                                    style={{ fontSize: '0.85rem' }}
-                                />
-                            </div>
-
-                            <div className="col-12 col-sm-4 d-flex align-items-center mt-4">
-                                <div className="form-check">
-                                    <input
-                                        type="checkbox"
-                                        id={`edu-current-${index}`}
-                                        {...register(`education.${index}.isCurrent`)}
-                                        className="form-check-input bg-dark border-secondary"
-                                    />
-                                    <label htmlFor={`edu-current-${index}`} className="form-check-label small text-light opacity-75" style={{ fontSize: '0.8rem' }}>Currently Studying</label>
-                                </div>
-                            </div>
+                        <div className="col-md-4">
+                            <label className="form-label small text-white-50 mb-1">Start Date</label>
+                            <input
+                                className="form-control glass-input text-white"
+                                placeholder="Jul 2018"
+                                value={edu.startDate || ''}
+                                onChange={(e) => handleChange(idx, 'startDate', e.target.value)}
+                            />
+                        </div>
+                        <div className="col-md-4">
+                            <label className="form-label small text-white-50 mb-1">End Date</label>
+                            <input
+                                className="form-control glass-input text-white"
+                                placeholder="Jun 2021"
+                                value={edu.endDate || ''}
+                                onChange={(e) => handleChange(idx, 'endDate', e.target.value)}
+                            />
+                        </div>
+                        <div className="col-md-4">
+                            <label className="form-label small text-white-50 mb-1">Score / Percentage / CGPA</label>
+                            <input
+                                className="form-control glass-input text-white"
+                                placeholder="84% or 8.5 CGPA"
+                                value={edu.score || ''}
+                                onChange={(e) => handleChange(idx, 'score', e.target.value)}
+                            />
                         </div>
                     </div>
-                ))}
-            </div>
+                </div>
+            ))}
 
-            <div className="d-flex justify-content-between mt-3 pt-2 border-top border-secondary border-opacity-25">
-                <button type="button" onClick={prevStep} className="btn btn-secondary py-1.5 px-4" style={{ fontSize: '0.9rem', borderRadius: '10px' }}>Back</button>
-                <button type="submit" disabled={loading} className="btn btn-premium py-1.5 px-4" style={{ fontSize: '0.9rem' }}>
-                    {loading ? 'Saving...' : 'Save & Next'}
+            <div className="d-flex justify-content-between mt-4">
+                <button type="button" onClick={prevStep} className="btn btn-outline-light px-4 py-1.5" style={{ borderRadius: '8px' }}>
+                    ⬅️ Back
+                </button>
+                <button type="submit" className="btn btn-info text-dark fw-bold px-4 py-1.5" style={{ borderRadius: '8px' }}>
+                    Next Section ➡️
                 </button>
             </div>
         </form>

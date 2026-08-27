@@ -1,155 +1,147 @@
 // server/controllers/resumeController.js
 const Resume = require('../models/resume');
+const User = require('../models/users');
+const mongoose = require('mongoose');
 
-// Personal Info ko save ya update karne ka controller
-const savePersonalInfo = async (req, res) => {
+const getValidUserId = (id) => {
+    if (!id) return null;
+    return mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id;
+};
+
+// 1. MASTER SAVE CONTROLLER (Creates/Updates document on "Save to Profile")
+const saveMasterResume = async (req, res) => {
     try {
-        const userId = req.user.id; // authMiddleware se milega
-        const personalInfoData = req.body;
+        const rawUserId = req.user.id || req.user._id;
+        const userIdObj = getValidUserId(rawUserId);
 
-        // Check karo agar user ka resume pehle se hai
-        let resume = await Resume.findOne({ userId });
-
-        if (resume) {
-            // Agar hai, to sirf personalInfo update karo
-            resume.personalInfo = personalInfoData;
-            await resume.save();
-            return res.status(200).json({ success: true, message: "Personal info updated successfully", resume });
-        } else {
-            // Agar nahi hai, to naya resume document banao (baki fields khali rahengi)
-            resume = new Resume({
-                userId,
-                personalInfo: personalInfoData,
-                summary: 'Professional Summary...', // Initial placeholder text taaki validation fail na ho
-            });
-            await resume.save();
-            return res.status(201).json({ success: true, message: "Resume created with personal info", resume });
+        if (!rawUserId) {
+            return res.status(400).json({ success: false, message: "Authentication required" });
         }
+
+        let fullResumeData = JSON.parse(JSON.stringify(req.body));
+        const resumeDocId = fullResumeData._id;
+
+        delete fullResumeData._id;
+        delete fullResumeData.__v;
+        delete fullResumeData.createdAt;
+        delete fullResumeData.updatedAt;
+
+        const cleanSubDocs = (arr) => {
+            if (!Array.isArray(arr)) return [];
+            return arr.map(item => {
+                if (typeof item === 'object' && item !== null) {
+                    const newItem = { ...item };
+                    delete newItem._id;
+                    return newItem;
+                }
+                return item;
+            });
+        };
+
+        if (fullResumeData.projects) fullResumeData.projects = cleanSubDocs(fullResumeData.projects);
+        if (fullResumeData.education) fullResumeData.education = cleanSubDocs(fullResumeData.education);
+        if (fullResumeData.experience) fullResumeData.experience = cleanSubDocs(fullResumeData.experience);
+        if (fullResumeData.certifications) fullResumeData.certifications = cleanSubDocs(fullResumeData.certifications);
+        if (fullResumeData.languages) fullResumeData.languages = cleanSubDocs(fullResumeData.languages);
+
+        let savedResume;
+
+        if (resumeDocId && mongoose.Types.ObjectId.isValid(resumeDocId)) {
+            // Update existing resume
+            savedResume = await Resume.findByIdAndUpdate(
+                resumeDocId,
+                {
+                    $set: {
+                        ...fullResumeData,
+                        userId: userIdObj,
+                        resumeTitle: fullResumeData.resumeTitle || 'My Resume',
+                        updatedAt: new Date()
+                    }
+                },
+                { returnDocument: 'after', runValidators: false }
+            );
+        } else {
+            // Create new resume entry in DB
+            savedResume = await Resume.create({
+                ...fullResumeData,
+                userId: userIdObj,
+                resumeTitle: fullResumeData.resumeTitle || 'My Resume'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Resume saved successfully to cloud profile!",
+            resume: savedResume
+        });
+
     } catch (error) {
-        console.error("Error saving personal info:", error);
-        res.status(500).json({ success: false, message: "Internal Server Error" });
+        console.error("Save Error:", error);
+        return res.status(500).json({ success: false, message: "Storage failed: " + error.message });
     }
 };
 
-// Inn functions ko controllers/resumeController.js ke niche append karo
-
-const saveSummary = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { summary } = req.body;
-
-        let resume = await Resume.findOne({ userId });
-        if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
-
-        resume.summary = summary;
-        await resume.save();
-        return res.status(200).json({ success: true, message: "Summary saved successfully", resume });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error" });
-    }
-};
-
-const saveSkills = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { skills } = req.body;
-
-        let resume = await Resume.findOne({ userId });
-        if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
-
-        resume.skills = skills;
-        await resume.save();
-        return res.status(200).json({ success: true, message: "Skills saved successfully", resume });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error" });
-    }
-};
-
-// Education
-const saveEducation = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { education } = req.body;
-
-        let resume = await Resume.findOne({ userId });
-        if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
-
-        resume.education = education;
-        await resume.save();
-        return res.status(200).json({ success: true, message: "Education parsed successfully", resume });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error" });
-    }
-};
-
-const saveExperience = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { experience } = req.body;
-
-        // Line breaks (\n) ko structural array system map array points me convert karne ke liye parser filter:
-        const formattedExperience = experience.map(exp => ({
-            ...exp,
-            responsibilities: exp.responsibilities.split('\n').filter(p => p.trim() !== '')
-        }));
-
-        let resume = await Resume.findOne({ userId });
-        if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
-
-        resume.experience = formattedExperience;
-        await resume.save();
-        return res.status(200).json({ success: true, message: "Experience loaded successfully", resume });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error" });
-    }
-};
-
-const saveProjects = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { projects } = req.body;
-
-        let resume = await Resume.findOne({ userId });
-        if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
-
-        resume.projects = projects;
-        await resume.save();
-        return res.status(200).json({ success: true, message: "Projects loaded", resume });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-const saveAdditional = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { certifications, languages } = req.body;
-
-        let resume = await Resume.findOne({ userId });
-        if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
-
-        resume.certifications = certifications;
-        resume.languages = languages;
-        await resume.save();
-        return res.status(200).json({ success: true, message: "Metadata compiled successfully", resume });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
+// 2. FETCH LAST UPDATED RESUME
 const getResumeData = async (req, res) => {
     try {
-        const resume = await Resume.findOne({ userId: req.user.id });
+        const rawUserId = req.user.id || req.user._id;
+        const userIdObj = getValidUserId(rawUserId);
+
+        const resume = await Resume.findOne({
+            $or: [{ userId: userIdObj }, { userId: String(rawUserId) }]
+        }).sort({ updatedAt: -1 });
+
         if (!resume) {
             return res.status(200).json({ success: false, message: "No previous resume found" });
         }
         return res.status(200).json({ success: true, resume });
     } catch (error) {
         console.error("Fetch Resume Error:", error);
-        res.status(500).json({ success: false, message: "Database retrieval failed" });
+        return res.status(500).json({ success: false, message: "Database retrieval failed" });
     }
 };
 
+// 3. DASHBOARD & USER RESUMES CONTROLLER
+const getUserDashboardData = async (req, res) => {
+    try {
+        const rawUserId = req.user.id || req.user._id;
+        const userIdObj = getValidUserId(rawUserId);
+
+        const user = await User.findById(userIdObj).select("-password");
+        const resumes = await Resume.find({
+            $or: [{ userId: userIdObj }, { userId: String(rawUserId) }]
+        }).sort({ updatedAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            user,
+            totalResumes: resumes.length,
+            resumes
+        });
+    } catch (error) {
+        console.error("Dashboard Fetch Error:", error);
+        return res.status(500).json({ success: false, message: "Failed to load profile dashboard data" });
+    }
+};
+
+// Section-wise Fallback Aliases (Points to master save)
+const savePersonalInfo = saveMasterResume;
+const saveSummary = saveMasterResume;
+const saveSkills = saveMasterResume;
+const saveEducation = saveMasterResume;
+const saveExperience = saveMasterResume;
+const saveProjects = saveMasterResume;
+const saveAdditional = saveMasterResume;
+
 module.exports = {
-    savePersonalInfo, saveSummary, saveSkills, saveEducation, saveExperience, saveProjects, saveAdditional, getResumeData
+    savePersonalInfo,
+    saveSummary,
+    saveSkills,
+    saveEducation,
+    saveExperience,
+    saveProjects,
+    saveAdditional,
+    getResumeData,
+    saveMasterResume,
+    getUserDashboardData
 };

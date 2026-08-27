@@ -1,3 +1,4 @@
+// client/src/components/forms/SummaryForm.jsx
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useResumeStore } from '../../store/useResumeStore';
@@ -7,15 +8,12 @@ export default function SummaryForm() {
     const [loading, setLoading] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
 
-    // Fixed: Added formState: { errors } here
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         defaultValues: { summary: resumeData.summary || '' }
     });
 
-    // Live Tracking: Watch summary textbox changes character by character
     const watchedSummary = watch('summary');
 
-    // Live Sync Matrix: Auto syncs with global Zustand preview state on every keystroke
     useEffect(() => {
         if (watchedSummary !== undefined) {
             updateResumeData('summary', watchedSummary);
@@ -35,7 +33,6 @@ export default function SummaryForm() {
                 })
             });
 
-            // Check karo agar response JSON nahi hai (HTML ya text error hai)
             const contentType = response.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
                 const rawText = await response.text();
@@ -59,32 +56,15 @@ export default function SummaryForm() {
         }
     };
 
-    const onSubmit = async (data) => {
+    // 🚀 FIXED: Zero DB Hit on Next! Directly updates local store & jumps to next step
+    const onSubmit = (data) => {
         setLoading(true);
         try {
             const pureSummary = typeof data === 'object' && data.summary ? data.summary : data;
-
             updateResumeData('summary', pureSummary);
-            const token = localStorage.getItem('token');
-
-            const response = await fetch('http://localhost:6050/api/resume/summary', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ summary: pureSummary })
-            });
-
-            const resData = await response.json();
-            if (resData.success) {
-                nextStep();
-            } else {
-                alert(resData.message || "Something went wrong");
-            }
+            nextStep();
         } catch (error) {
-            console.error("API Error:", error);
-            alert("Database synchronization failed.");
+            console.error("Form Error:", error);
         } finally {
             setLoading(false);
         }
@@ -97,7 +77,6 @@ export default function SummaryForm() {
                     Professional Summary
                 </h4>
 
-                {/* Clean Magic AI Button Component */}
                 <button
                     type="button"
                     disabled={aiLoading}

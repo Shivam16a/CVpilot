@@ -2,58 +2,81 @@
 const mongoose = require('mongoose');
 
 const ResumeSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    personalInfo: {
-        fullName: { type: String, required: true }, 
-        title: { type: String, required: true }, 
-        email: { type: String, required: true }, 
-        phone: { type: String, required: true }, 
-        location: { type: String, required: true }, 
-        linkedin: { type: String }, 
-        github: { type: String }, 
-        portfolio: { type: String }
-    },
-    summary: { type: String, required: true }, 
-    education: [{
-        degree: { type: String, required: true }, 
-    course: { type: String, required: true }, 
-    institute: { type: String, required: true }, 
-    location: { type: String }, 
-    startDate: { type: String, required: true }, 
-    endDate: { type: String }, 
-    score: { type: String }, 
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  resumeTitle: {
+    type: String,
+    default: 'My Resume'
+  },
+  templateId: {
+    type: String,
+    default: 'template-ats'
+  },
+  atsScore: {
+    type: Number,
+    default: 0
+  },
+
+  // Flexible Object & Array Schema (Prevents Mongoose 500 Validation Crashes)
+  personalInfo: {
+    fullName: { type: String, default: '' },
+    title: { type: String, default: '' },
+    email: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    location: { type: String, default: '' },
+    linkedin: { type: String, default: '' },
+    github: { type: String, default: '' },
+    portfolio: { type: String, default: '' }
+  },
+  summary: { type: String, default: '' },
+
+  education: [{
+    degree: { type: String },
+    course: { type: String },
+    institute: { type: String },
+    location: { type: String },
+    startDate: { type: String },
+    endDate: { type: String },
+    score: { type: String },
     isCurrent: { type: Boolean, default: false }
-}],
-    experience: [{
-        role: { type: String, required: true }, 
-    company: { type: String, required: true },
-    location: { type: String }, 
-    type: { type: String }, 
-    startDate: { type: String, required: true }, 
-    endDate: { type: String }, 
-    isCurrent: { type: Boolean, default: false }, 
+  }],
+
+  experience: [{
+    role: { type: String },
+    company: { type: String },
+    location: { type: String },
+    type: { type: String },
+    startDate: { type: String },
+    endDate: { type: String },
+    isCurrent: { type: Boolean, default: false },
     responsibilities: [{ type: String }]
   }],
-projects: [{
-    name: { type: String, required: true }, 
-techStack: [{ type: String }], 
-description: { type: String, required: true }, 
-github: { type: String }, 
-liveLink: { type: String }, 
-achievements: [{ type: String }]
+
+  projects: [{
+    name: { type: String },
+    techStack: [{ type: String }],
+    description: { type: String },
+    github: { type: String },
+    liveLink: { type: String },
+    achievements: [{ type: String }]
   }],
-skills: [{ type: String }], 
-certifications: [{
-    name: { type: String }, 
-organization: { type: String }, 
-issueDate: { type: String } 
+
+  skills: [{ type: String }],
+
+  certifications: [{
+    name: { type: String },
+    organization: { type: String },
+    issueDate: { type: String },
+    link: { type: String }
   }],
-languages: [{
-    name: { type: String }, 
-level: { type: String } 
-  }],
-templateId: { type: String, default: 'simple-ats' }, 
-atsScore: { type: Number, default: 0 } 
+
+  languages: [{
+    name: { type: String },
+    level: { type: String }
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Resume', ResumeSchema);

@@ -1,6 +1,5 @@
 // client/src/components/ResumePreview.jsx
 import React, { forwardRef } from 'react';
-import { Link } from 'react-router-dom';
 import { useResumeStore } from '../store/useResumeStore';
 import FinalReviewStep from './steps/FinalReviewStep';
 
@@ -30,6 +29,59 @@ const ResumePreview = forwardRef((props, ref) => {
 
     const safeText = renderSafeText;
     const safeArray = getSafeArray;
+
+    // 🔗 External Safe Link Formatter (Opens in NEW TAB)
+    const renderExternalLink = (url, label, className = "text-primary fw-semibold text-decoration-none") => {
+        if (!url) return null;
+        const cleanUrl = safeText(url).trim();
+        if (!cleanUrl) return null;
+
+        const href = cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')
+            ? cleanUrl
+            : `https://${cleanUrl}`;
+
+        return (
+            <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={className}
+            >
+                {label}
+            </a>
+        );
+    };
+
+    // client/src/components/ResumePreview.jsx (Updated Parser Block)
+
+    const parseCertData = (certItem) => {
+        let name = safeText(certItem?.name || certItem);
+        let organization = safeText(certItem?.organization);
+        let issueDate = safeText(certItem?.issueDate);
+        let link = safeText(certItem?.link || certItem?.url || certItem?.credentialUrl);
+
+        // 🔍 Smart Mongo Atlas Field Correction:
+        // Check if issueDate or organization accidentally holds the URL
+        if (!link) {
+            if (issueDate.includes('http://') || issueDate.includes('https://') || issueDate.includes('drive.google')) {
+                link = issueDate;
+                issueDate = ''; // Clear issueDate so URL string doesn't print as date text
+            } else if (organization.includes('http://') || organization.includes('https://') || organization.includes('drive.google')) {
+                link = organization;
+                organization = '';
+            }
+        }
+
+        // Standard URL Regex fallback in name string
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const foundUrls = name.match(urlRegex);
+        if (foundUrls && foundUrls.length > 0) {
+            if (!link) link = foundUrls[0];
+            name = name.replace(urlRegex, '').replace(/\(\s*\)/g, '').trim();
+        }
+
+        return { name, organization, issueDate, link };
+    };
 
     return (
         <div className="w-100 p-1 text-start">
@@ -67,8 +119,8 @@ const ResumePreview = forwardRef((props, ref) => {
                             <div className="d-flex flex-wrap justify-content-center gap-2 mt-1 text-muted" style={{ fontSize: '10px' }}>
                                 {personalInfo?.email && <span>{safeText(personalInfo.email)}</span>}
                                 {personalInfo?.phone && <span>• {safeText(personalInfo.phone)}</span>}
-                                {personalInfo?.linkedin && <Link to={safeText(personalInfo.linkedin)} className="text-primary fw-semibold text-decoration-none"><i className="fab fa-linkedin"></i> LinkedIn</Link>}
-                                {personalInfo?.github && <Link to={safeText(personalInfo.github)} className="text-muted fw-semibold text-decoration-none"><i className="fab fa-github-square"></i> GitHub</Link>}
+                                {personalInfo?.linkedin && <span>• {renderExternalLink(personalInfo.linkedin, 'LinkedIn', 'text-primary fw-semibold text-decoration-none')}</span>}
+                                {personalInfo?.github && <span>• {renderExternalLink(personalInfo.github, 'GitHub', 'text-dark fw-semibold text-decoration-none')}</span>}
                                 {personalInfo?.location && <span>• {safeText(personalInfo.location)}</span>}
                             </div>
                         </div>
@@ -115,7 +167,10 @@ const ResumePreview = forwardRef((props, ref) => {
                                     <div key={index} className="mb-2">
                                         <div className="d-flex justify-content-between fw-bold text-dark">
                                             <span>{safeText(proj.name)} {proj.techStack && <span className="fw-normal text-muted" style={{ fontSize: '10px' }}>({safeArray(proj.techStack).join(', ')})</span>}</span>
-                                            <span className="fw-normal text-muted" style={{ fontSize: '10px' }}>{proj.liveLink && <Link to={safeText(proj.liveLink)} className='text-muted fw-normal text-decoration-none'>{safeText(proj.liveLink)}</Link>}</span>
+                                            <span className="fw-normal text-muted" style={{ fontSize: '10px' }}>
+                                                {proj.liveLink && renderExternalLink(proj.liveLink, '[Live Demo 🔗]', 'text-primary text-decoration-underline ms-2')}
+                                                {proj.github && renderExternalLink(proj.github, '[GitHub 💻]', 'text-dark text-decoration-underline ms-2')}
+                                            </span>
                                         </div>
                                         <p className="m-0 text-secondary mt-0.5">{safeText(proj.description)}</p>
                                     </div>
@@ -144,9 +199,17 @@ const ResumePreview = forwardRef((props, ref) => {
                             <div className="mb-2">
                                 <h6 className="fw-bold text-uppercase border-bottom border-dark pb-1 mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>Certifications</h6>
                                 <ul className="m-0 ps-3 text-secondary" style={{ listStyleType: 'square' }}>
-                                    {safeArray(certifications).map((cert, index) => (
-                                        <li key={index} className="mb-0.5">{safeText(cert.name)} {cert.organization && `— ${safeText(cert.organization)}`} {cert.issueDate && `(${safeText(cert.issueDate)})`}</li>
-                                    ))}
+                                    {safeArray(certifications).map((certItem, index) => {
+                                        const cert = parseCertData(certItem);
+                                        return (
+                                            <li key={index} className="mb-0.5">
+                                                <span className="fw-semibold text-dark">{cert.name}</span>
+                                                {cert.organization && <span> — <span className="text-muted">{cert.organization}</span></span>}
+                                                {cert.issueDate && <span className="text-muted"> ({cert.issueDate})</span>}
+                                                {cert.link && renderExternalLink(cert.link, ' [View Credential 🔗]', 'text-primary fw-medium text-decoration-underline ms-1')}
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             </div>
                         )}
@@ -171,8 +234,8 @@ const ResumePreview = forwardRef((props, ref) => {
                                     {personalInfo?.phone && <div>📞 {safeText(personalInfo.phone)}</div>}
                                     {personalInfo?.email && <div className="text-break">✉️ {safeText(personalInfo.email)}</div>}
                                     {personalInfo?.location && <div>📍 {safeText(personalInfo.location)}</div>}
-                                    {personalInfo?.linkedin && <div className="text-break">🔗 {safeText(personalInfo.linkedin)}</div>}
-                                    {personalInfo?.github && <div className="text-break">💻 {safeText(personalInfo.github)}</div>}
+                                    {personalInfo?.linkedin && <div className="text-break mt-1">🔗 {renderExternalLink(personalInfo.linkedin, 'LinkedIn', 'text-info fw-semibold text-decoration-none')}</div>}
+                                    {personalInfo?.github && <div className="text-break mt-1">💻 {renderExternalLink(personalInfo.github, 'GitHub', 'text-light fw-semibold text-decoration-none')}</div>}
                                 </div>
 
                                 {skills && safeArray(skills).length > 0 && (
@@ -188,7 +251,15 @@ const ResumePreview = forwardRef((props, ref) => {
                                     <div className="mb-3">
                                         <h6 className="fw-bold text-uppercase border-bottom border-light pb-1 mb-2" style={{ fontSize: '11px' }}>Certifications</h6>
                                         <ul className="ps-3 m-0">
-                                            {safeArray(certifications).map((c, i) => <li key={i}>{safeText(c.name)}</li>)}
+                                            {safeArray(certifications).map((certItem, i) => {
+                                                const cert = parseCertData(certItem);
+                                                return (
+                                                    <li key={i} className="mb-1">
+                                                        {cert.name}
+                                                        {cert.link && renderExternalLink(cert.link, ' [🔗]', 'text-info text-decoration-none ms-1')}
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     </div>
                                 )}
@@ -237,7 +308,10 @@ const ResumePreview = forwardRef((props, ref) => {
                                     <h6 className="fw-bold text-uppercase border-bottom border-dark pb-1" style={{ fontSize: '11px' }}>Projects</h6>
                                     {safeArray(projects).map((proj, i) => (
                                         <div key={i} className="mb-2">
-                                            <div className="fw-bold">{safeText(proj.name)} {proj.techStack && <span className="fw-normal text-muted">({safeArray(proj.techStack).join(', ')})</span>}</div>
+                                            <div className="fw-bold">
+                                                {safeText(proj.name)} {proj.techStack && <span className="fw-normal text-muted">({safeArray(proj.techStack).join(', ')})</span>}
+                                                {proj.liveLink && renderExternalLink(proj.liveLink, ' [Live Demo 🔗]', 'text-primary ms-2')}
+                                            </div>
                                             <p className="m-0 text-secondary">{safeText(proj.description)}</p>
                                         </div>
                                     ))}
@@ -268,8 +342,8 @@ const ResumePreview = forwardRef((props, ref) => {
                             <div className="fw-semibold text-secondary" style={{ fontSize: '13px' }}>{safeText(personalInfo?.title) || 'Professional Title'}</div>
                             <div className="mt-1 text-muted" style={{ fontSize: '10px' }}>
                                 📞 {safeText(personalInfo?.phone)} | ✉️ {safeText(personalInfo?.email)} | 📍 {safeText(personalInfo?.location)}
-                                {personalInfo?.linkedin && ` | LinkedIn: ${safeText(personalInfo.linkedin)}`}
-                                {personalInfo?.github && ` | GitHub: ${safeText(personalInfo.github)}`}
+                                {personalInfo?.linkedin && <span> | LinkedIn: {renderExternalLink(personalInfo.linkedin, 'Profile 🔗', 'text-primary')}</span>}
+                                {personalInfo?.github && <span> | GitHub: {renderExternalLink(personalInfo.github, 'Profile 💻', 'text-dark')}</span>}
                             </div>
                         </div>
 
@@ -311,7 +385,10 @@ const ResumePreview = forwardRef((props, ref) => {
                                 <h6 className="fw-bold text-uppercase border-bottom border-secondary pb-1" style={{ fontSize: '11px' }}>Projects</h6>
                                 {safeArray(projects).map((proj, i) => (
                                     <div key={i} className="mb-2">
-                                        <div className="fw-bold">{safeText(proj.name)} {proj.techStack && <span className="fw-normal text-muted">({safeArray(proj.techStack).join(', ')})</span>}</div>
+                                        <div className="fw-bold">
+                                            {safeText(proj.name)} {proj.techStack && <span className="fw-normal text-muted">({safeArray(proj.techStack).join(', ')})</span>}
+                                            {proj.liveLink && renderExternalLink(proj.liveLink, ' [Live 🔗]', 'text-primary ms-2')}
+                                        </div>
                                         <p className="m-0 text-secondary">{safeText(proj.description)}</p>
                                     </div>
                                 ))}
@@ -334,7 +411,15 @@ const ResumePreview = forwardRef((props, ref) => {
                             <div className="mb-3">
                                 <h6 className="fw-bold text-uppercase border-bottom border-secondary pb-1" style={{ fontSize: '11px' }}>Certifications</h6>
                                 <ul>
-                                    {safeArray(certifications).map((cert, i) => <li key={i}>{safeText(cert.name)} {cert.organization && `— ${safeText(cert.organization)}`}</li>)}
+                                    {safeArray(certifications).map((certItem, i) => {
+                                        const cert = parseCertData(certItem);
+                                        return (
+                                            <li key={i}>
+                                                {cert.name} {cert.organization && `— ${cert.organization}`}
+                                                {cert.link && renderExternalLink(cert.link, ' [View Credential 🔗]', 'text-primary ms-1')}
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             </div>
                         )}
@@ -357,8 +442,8 @@ const ResumePreview = forwardRef((props, ref) => {
                                 <h6 className="fw-bold text-uppercase m-0" style={{ fontSize: '11px' }}>Contact Info</h6>
                                 <div className="text-muted" style={{ fontSize: '10px' }}>
                                     Email: {safeText(personalInfo?.email)} | Mobile: {safeText(personalInfo?.phone)} | Address: {safeText(personalInfo?.location)}
-                                    {personalInfo?.linkedin && ` | LinkedIn: ${safeText(personalInfo.linkedin)}`}
-                                    {personalInfo?.github && ` | GitHub: ${safeText(personalInfo.github)}`}
+                                    {personalInfo?.linkedin && <span> | LinkedIn: {renderExternalLink(personalInfo.linkedin, 'LinkedIn 🔗', 'text-primary')}</span>}
+                                    {personalInfo?.github && <span> | GitHub: {renderExternalLink(personalInfo.github, 'GitHub 💻', 'text-dark')}</span>}
                                 </div>
                             </div>
 
@@ -398,6 +483,7 @@ const ResumePreview = forwardRef((props, ref) => {
                                     {safeArray(projects).map((proj, i) => (
                                         <div key={i} className="mb-2">
                                             <strong>{safeText(proj.name)}</strong> {proj.techStack && `(${safeArray(proj.techStack).join(', ')})`}
+                                            {proj.liveLink && renderExternalLink(proj.liveLink, ' [Demo 🔗]', 'text-primary ms-2')}
                                             <p className="m-0 text-secondary">{safeText(proj.description)}</p>
                                         </div>
                                     ))}
@@ -419,7 +505,15 @@ const ResumePreview = forwardRef((props, ref) => {
                                 <div className="mb-3">
                                     <div className="bg-secondary text-white px-2 py-0.5 fw-bold text-uppercase mb-1" style={{ fontSize: '10px' }}>Certifications</div>
                                     <ul>
-                                        {safeArray(certifications).map((cert, i) => <li key={i}>{safeText(cert.name)} {cert.organization && `— ${safeText(cert.organization)}`}</li>)}
+                                        {safeArray(certifications).map((certItem, i) => {
+                                            const cert = parseCertData(certItem);
+                                            return (
+                                                <li key={i}>
+                                                    {cert.name} {cert.organization && `— ${cert.organization}`}
+                                                    {cert.link && renderExternalLink(cert.link, ' [Credential 🔗]', 'text-primary ms-1')}
+                                                </li>
+                                            );
+                                        })}
                                     </ul>
                                 </div>
                             )}
@@ -436,6 +530,8 @@ const ResumePreview = forwardRef((props, ref) => {
                             <div className="fw-bold mt-2">{safeText(personalInfo?.fullName)}</div>
                             <div className="text-muted" style={{ fontSize: '10px' }}>
                                 {safeText(personalInfo?.location)} | Email: {safeText(personalInfo?.email)} | Contact: {safeText(personalInfo?.phone)}
+                                {personalInfo?.linkedin && <span> | {renderExternalLink(personalInfo.linkedin, 'LinkedIn', 'text-dark fw-bold')}</span>}
+                                {personalInfo?.github && <span> | {renderExternalLink(personalInfo.github, 'GitHub', 'text-dark fw-bold')}</span>}
                             </div>
                         </div>
 
@@ -475,6 +571,7 @@ const ResumePreview = forwardRef((props, ref) => {
                                 {safeArray(projects).map((proj, i) => (
                                     <div key={i} className="mb-2 ps-1">
                                         <strong>{safeText(proj.name)}</strong> {proj.techStack && `(${safeArray(proj.techStack).join(', ')})`}
+                                        {proj.liveLink && renderExternalLink(proj.liveLink, ' [Link 🔗]', 'text-dark ms-2')}
                                         <p className="m-0 text-secondary">{safeText(proj.description)}</p>
                                     </div>
                                 ))}
@@ -511,7 +608,15 @@ const ResumePreview = forwardRef((props, ref) => {
                             <div className="mb-3">
                                 <div className="bg-light p-1 fw-bold text-uppercase border-bottom border-top mb-1" style={{ fontSize: '10px' }}>Certifications:</div>
                                 <ul>
-                                    {safeArray(certifications).map((cert, i) => <li key={i}>{safeText(cert.name)} {cert.organization && `— ${safeText(cert.organization)}`}</li>)}
+                                    {safeArray(certifications).map((certItem, i) => {
+                                        const cert = parseCertData(certItem);
+                                        return (
+                                            <li key={i}>
+                                                {cert.name} {cert.organization && `— ${cert.organization}`}
+                                                {cert.link && renderExternalLink(cert.link, ' [Credential 🔗]', 'text-dark ms-1')}
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             </div>
                         )}

@@ -2,7 +2,6 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { FaShieldAlt } from "react-icons/fa";
-import "../styles/VerifyOtp.css"
 
 function VerifyOtp() {
     const navigate = useNavigate();

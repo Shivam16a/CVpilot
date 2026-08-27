@@ -1,7 +1,3 @@
-// client/src/components/DashboardLayout.jsx
-// import React from "react";
-import "../styles/auth.css"; // Tumhari original css background reuse karega
-import "../styles/dashboard.css";
 
 const DashboardLayout = ({ children, title }) => {
     return (
