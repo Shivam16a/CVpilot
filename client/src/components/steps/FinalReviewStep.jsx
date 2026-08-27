@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useResumeStore } from '../../store/useResumeStore';
+import { generateResumePDF } from '../../utils/pdfGenerator'; // 🚀 Import PDF Generator
 import Toast from '../Toast';
 
 export default function FinalReviewStep() {
@@ -9,16 +10,23 @@ export default function FinalReviewStep() {
     const { resumeData, setStep, selectedTemplate, setTemplate, setFullResume, startNewResume } = useResumeStore();
     const [dbLoading, setDbLoading] = useState(false);
 
-    // Resume Title State
-    const [resumeTitle, setResumeTitle] = useState(resumeData.resumeTitle || 'My Data Analyst CV');
+    const [resumeTitle, setResumeTitle] = useState(resumeData.resumeTitle || 'My FullStack Resume');
     const [toast, setToast] = useState({ message: '', type: 'success' });
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
     };
 
-    const handlePrint = () => {
-        window.print();
+    // 🚀 FIXED: Generates & Downloads PDF directly using jsPDF
+    const handleDownloadPDF = () => {
+        try {
+            // 🚀 Selected Template passing directly
+            generateResumePDF(resumeData, resumeTitle || 'Resume', selectedTemplate || 'template-ats');
+            showToast("PDF Downloaded in selected template style!", "success");
+        } catch (error) {
+            console.error("PDF Error:", error);
+            showToast("Failed to generate PDF.", "danger");
+        }
     };
 
     const handleSaveToProfile = async () => {
@@ -78,7 +86,6 @@ export default function FinalReviewStep() {
             <div className="glass-card p-3 p-md-4 text-white border-0 shadow-lg mb-4">
                 <div className="d-flex flex-column gap-3">
 
-                    {/* Controls Bar */}
                     <div className="d-flex flex-wrap align-items-center justify-content-start gap-2 border-bottom border-secondary border-opacity-25 pb-3">
 
                         {/* Resume Title Input */}
@@ -89,7 +96,7 @@ export default function FinalReviewStep() {
                                 value={resumeTitle}
                                 onChange={(e) => setResumeTitle(e.target.value)}
                                 className="form-control form-control-sm glass-input text-white py-1"
-                                placeholder="e.g. Data Analyst CV"
+                                placeholder="e.g. React Developer CV"
                                 style={{ width: '160px', fontSize: '0.8rem' }}
                             />
                         </div>
@@ -108,7 +115,7 @@ export default function FinalReviewStep() {
                             <option value="template-classic-table">Classic Academic</option>
                         </select>
 
-                        {/* 🚀 RESTORED EDIT BUTTON */}
+                        {/* Edit Button */}
                         <button
                             type="button"
                             onClick={() => setStep(1)}
@@ -139,10 +146,10 @@ export default function FinalReviewStep() {
                             ➕ New Resume
                         </button>
 
-                        {/* Print Action */}
+                        {/* 🚀 DOWNLOAD PDF BUTTON */}
                         <button
                             type="button"
-                            onClick={handlePrint}
+                            onClick={handleDownloadPDF}
                             className="btn btn-premium btn-sm py-1.5 px-3 fw-semibold"
                             style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}
                         >
@@ -151,13 +158,12 @@ export default function FinalReviewStep() {
 
                     </div>
 
-                    {/* Bottom Info Section */}
                     <div>
                         <h4 className="glow-title mb-1 d-flex align-items-center gap-2" style={{ fontSize: '1.35rem' }}>
                             🎉 Review & Download
                         </h4>
                         <p className="text-info text-opacity-75 small mb-0 fw-medium">
-                            Name your resume document and save multiple versions to your profile.
+                            Name your resume document, download a high-quality ATS PDF, and save to your cloud profile.
                         </p>
                     </div>
 
