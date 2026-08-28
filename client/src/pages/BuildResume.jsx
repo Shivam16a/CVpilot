@@ -1,25 +1,35 @@
 // client/src/pages/BuildResume.jsx
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom'; // 🚀 Import query param hook
 import DashboardLayout from '../components/DashboardLayout';
 import ResumeWizard from '../components/ResumeWizard';
 import ResumePreview from '../components/ResumePreview';
 import { useResumeStore } from '../store/useResumeStore';
 
 export default function BuildResume() {
+    const [searchParams] = useSearchParams();
+    const resumeId = searchParams.get('id'); // 🚀 1. Extract ?id= from URL
+
     const { currentStep, setFullResume, setStep, isNewResumeMode } = useResumeStore();
     const [pageLoading, setPageLoading] = useState(true);
 
     useEffect(() => {
         const checkExistingResume = async () => {
-            // 🚨 CRITICAL FIX: Agar user new resume bana raha hai, toh DB se old fetch SKIP kar do
-            if (isNewResumeMode) {
+            // Agar New Resume mode active hai aur koi specific ID request nahi ki gayi, toh skip kar do
+            if (isNewResumeMode && !resumeId) {
                 setPageLoading(false);
                 return;
             }
 
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:6050/api/resume/get-resume', {
+
+                // 🚀 2. If ID present in URL, pass it to API, else call fallback endpoint
+                const endpoint = resumeId
+                    ? `http://localhost:6050/api/resume/get-resume?id=${resumeId}`
+                    : 'http://localhost:6050/api/resume/get-resume';
+
+                const response = await fetch(endpoint, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -37,7 +47,7 @@ export default function BuildResume() {
         };
 
         checkExistingResume();
-    }, [setFullResume, setStep, isNewResumeMode]);
+    }, [setFullResume, setStep, isNewResumeMode, resumeId]); // 🚀 Added resumeId to dependencies
 
     if (pageLoading) {
         return (

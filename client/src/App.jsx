@@ -1,12 +1,14 @@
 // client/src/App.jsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Navbar from './components/Navbar'; // Navbar ab andar se route capture karega
+import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import TemplateSelection from './pages/TemplateSelection';
 import Profile from './pages/Profile';
 import BuildResume from './pages/BuildResume';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminRoute from './components/AdminRoute';
 
 // Protected Route Guard Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -35,7 +37,12 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+        </Route>
+
         <Route path="/profile" element={<Profile />} />
+        
         <Route
           path="/build-resume"
           element={

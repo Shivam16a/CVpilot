@@ -1,6 +1,8 @@
+// client/src/pages/Login.jsx
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Toast from "../components/Toast"; // 🚀 Added Toast Component
 
 function Login() {
     const navigate = useNavigate();
@@ -10,6 +12,10 @@ function Login() {
     });
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    // Toast State
+    const [toast, setToast] = useState({ message: '', type: 'success' });
+    const showToast = (message, type = 'success') => setToast({ message, type });
 
     const handleChange = (e) => {
         setFormData({
@@ -28,14 +34,23 @@ function Login() {
                 formData
             );
 
-            localStorage.setItem("token", res.data.token);
-            alert("Login Successful 🎉");
-            // Redirection route fixed to /select-template
-            navigate("/select-template");
+            if (res.data.success) {
+                // 🚀 CRITICAL FIX: Storing BOTH Token and User Object in LocalStorage
+                localStorage.setItem("token", res.data.token);
+                localStorage.setItem("user", JSON.stringify(res.data.user));
+
+                showToast("Login Successful 🎉", "success");
+
+                // Smooth delay to let user see the success toast
+                setTimeout(() => {
+                    navigate("/select-template");
+                }, 1000);
+            }
         } catch (error) {
-            alert(
-                error.response?.data?.message ||
-                "Login Failed"
+            console.error("Login Error:", error);
+            showToast(
+                error.response?.data?.message || "Login Failed. Please check your credentials.",
+                "danger"
             );
         } finally {
             setLoading(false);
@@ -44,6 +59,13 @@ function Login() {
 
     return (
         <div className="login-page d-flex align-items-center justify-content-center min-vh-100">
+            {/* Custom Toast Render */}
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ message: '', type: 'success' })}
+            />
+
             <div className="container">
                 <div className="row justify-content-center">
                     <div className="col-xl-4 col-lg-5 col-md-7 col-sm-10">

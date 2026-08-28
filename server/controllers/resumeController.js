@@ -81,15 +81,29 @@ const saveMasterResume = async (req, res) => {
     }
 };
 
-// 2. FETCH LAST UPDATED RESUME
+// 2. FETCH SPECIFIC RESUME BY ID (OR FALLBACK TO LATEST UPDATED) 🚀 [UPDATED]
 const getResumeData = async (req, res) => {
     try {
         const rawUserId = req.user.id || req.user._id;
         const userIdObj = getValidUserId(rawUserId);
+        const { id } = req.query; // 🚀 Extract ID from URL query param if present
 
-        const resume = await Resume.findOne({
-            $or: [{ userId: userIdObj }, { userId: String(rawUserId) }]
-        }).sort({ updatedAt: -1 });
+        let resume = null;
+
+        // Agar client ne explicit ID pass ki hai toh DB se wahi specific resume nikalo
+        if (id && mongoose.Types.ObjectId.isValid(id)) {
+            resume = await Resume.findOne({
+                _id: id,
+                $or: [{ userId: userIdObj }, { userId: String(rawUserId) }]
+            });
+        }
+
+        // Fallback: Agar koi ID pass nahi ki ya requested ID nahi mili, tab sabse recent wala nikalo
+        if (!resume) {
+            resume = await Resume.findOne({
+                $or: [{ userId: userIdObj }, { userId: String(rawUserId) }]
+            }).sort({ updatedAt: -1 });
+        }
 
         if (!resume) {
             return res.status(200).json({ success: false, message: "No previous resume found" });

@@ -7,7 +7,6 @@ const generateToken = require("../utils/generateToken");
 
 
 // REGISTER
-
 exports.register = async (req, res) => {
     try {
         const {
@@ -21,34 +20,33 @@ exports.register = async (req, res) => {
 
         if (existingUser) {
             return res.status(400).json({
+                success: false,
                 message: "User already exists",
             });
         }
 
-        const hashedPassword =
-            await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const otp = generateOTP();
 
-        const user = await User.create({
+        await User.create({
             username,
             email,
             phone,
             password: hashedPassword,
             otp,
-            otpExpire:
-                Date.now() + 5 * 60 * 1000,
+            otpExpire: Date.now() + 5 * 60 * 1000,
         });
 
         await sendEmail(email, otp);
 
         res.status(201).json({
             success: true,
-            message:
-                "OTP sent to email. Verify account.",
+            message: "OTP sent to email. Verify account.",
         });
     } catch (error) {
         res.status(500).json({
+            success: false,
             message: error.message,
         });
     }
@@ -56,28 +54,29 @@ exports.register = async (req, res) => {
 
 
 // VERIFY OTP
-
 exports.verifyOTP = async (req, res) => {
     try {
         const { email, otp } = req.body;
 
-        const user =
-            await User.findOne({ email });
+        const user = await User.findOne({ email });
 
         if (!user) {
             return res.status(404).json({
+                success: false,
                 message: "User not found",
             });
         }
 
         if (user.otp !== otp) {
             return res.status(400).json({
+                success: false,
                 message: "Invalid OTP",
             });
         }
 
         if (user.otpExpire < Date.now()) {
             return res.status(400).json({
+                success: false,
                 message: "OTP expired",
             });
         }
@@ -90,70 +89,83 @@ exports.verifyOTP = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message:
-                "Email verified successfully",
+            message: "Email verified successfully",
         });
     } catch (error) {
         res.status(500).json({
+            success: false,
             message: error.message,
         });
     }
 };
 
 
-// LOGIN
-
+// LOGIN (FIXED: Added Block Check & Explicit User Details Return)
 exports.login = async (req, res) => {
     try {
-        const { email, password } =
-            req.body;
+        const { email, password } = req.body;
 
-        const user =
-            await User.findOne({ email });
+        const user = await User.findOne({ email });
 
         if (!user) {
             return res.status(404).json({
+                success: false,
                 message: "User not found",
             });
         }
 
         if (!user.isVerified) {
             return res.status(400).json({
-                message:
-                    "Verify email first",
+                success: false,
+                message: "Verify email first",
             });
         }
 
-        const isMatch =
-            await bcrypt.compare(
-                password,
-                user.password
-            );
+        // 🚫 1. CRITICAL BLOCK CHECK
+        if (user.isBlocked) {
+            return res.status(403).json({
+                success: false,
+                isBlocked: true,
+                message: "Your account has been blocked by Admin.",
+            });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
             return res.status(400).json({
-                message:
-                    "Invalid credentials",
+                success: false,
+                message: "Invalid credentials",
             });
         }
 
-        const token =
-            generateToken(user._id);
+        const token = generateToken(user._id);
 
+        // 🚀 2. CLEAN SANITIZED USER RESPONSE (Ensures username & isAdmin are always available)
         res.status(200).json({
             success: true,
+            message: "Login successful!",
             token,
-            user,
+            user: {
+                _id: user._id,
+                username: user.username,
+                email: user.email,
+                phone: user.phone,
+                isAdmin: user.isAdmin === true,
+                isVerified: user.isVerified,
+                isBlocked: user.isBlocked === true
+            },
         });
     } catch (error) {
         res.status(500).json({
+            success: false,
             message: error.message,
         });
     }
 };
 
-// FORGOT PASSWORD
 
+// FORGOT PASSWORD
 exports.forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -162,6 +174,7 @@ exports.forgotPassword = async (req, res) => {
 
         if (!user) {
             return res.status(404).json({
+                success: false,
                 message: "User not found",
             });
         }
@@ -182,16 +195,16 @@ exports.forgotPassword = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
+            success: false,
             message: error.message,
         });
     }
 };
 
-// RESET PASSWORD
 
+// RESET PASSWORD
 exports.resetPassword = async (req, res) => {
     try {
-
         const {
             email,
             otp,
@@ -202,27 +215,28 @@ exports.resetPassword = async (req, res) => {
 
         if (!user) {
             return res.status(404).json({
+                success: false,
                 message: "User not found",
             });
         }
 
         if (user.otp !== otp) {
             return res.status(400).json({
+                success: false,
                 message: "Invalid OTP",
             });
         }
 
         if (user.otpExpire < Date.now()) {
             return res.status(400).json({
+                success: false,
                 message: "OTP Expired",
             });
         }
 
-        const hashedPassword =
-            await bcrypt.hash(newPassword, 10);
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         user.password = hashedPassword;
-
         user.otp = null;
         user.otpExpire = null;
 
@@ -235,6 +249,7 @@ exports.resetPassword = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({
+            success: false,
             message: error.message,
         });
     }

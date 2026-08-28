@@ -13,7 +13,9 @@ const {
     saveMasterResume,
     getUserDashboardData
 } = require('../controllers/resumeController');
-const protect = require('../middleware/authMiddleware');
+
+// 🚀 FIXED HERE: Added destructured brackets { protect }
+const { protect } = require('../middleware/authMiddleware');
 
 // Get saved resume for auto-filling inputs
 router.get('/get-resume', protect, getResumeData);
