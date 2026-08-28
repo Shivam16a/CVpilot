@@ -1,26 +1,43 @@
 // client/src/components/steps/FinalReviewStep.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useResumeStore } from '../../store/useResumeStore';
-import { generateResumePDF } from '../../utils/pdfGenerator'; // 🚀 Import PDF Generator
+import { generateResumePDF } from '../../utils/pdfGenerator';
 import Toast from '../Toast';
+import JobBoardModal from '../JobBoardModal';
 
 export default function FinalReviewStep() {
     const navigate = useNavigate();
     const { resumeData, setStep, selectedTemplate, setTemplate, setFullResume, startNewResume } = useResumeStore();
     const [dbLoading, setDbLoading] = useState(false);
+    const [showJobBoard, setShowJobBoard] = useState(false);
+
+    // ATS Analyzer States
+    const [atsLoading, setAtsLoading] = useState(false);
+    const [atsResult, setAtsResult] = useState(null);
+    const [showAtsModal, setShowAtsModal] = useState(false);
+
+    // JD Matcher States
+    const [jdText, setJdText] = useState('');
+    const [jdLoading, setJdLoading] = useState(false);
+    const [jdResult, setJdResult] = useState(null);
+    const [showJdModal, setShowJdModal] = useState(false);
+
+    // Cover Letter States
+    const [coverLetterInput, setCoverLetterInput] = useState({ jobTitle: '', companyName: '', jobDescription: '' });
+    const [coverLetterText, setCoverLetterText] = useState('');
+    const [coverLoading, setCoverLoading] = useState(false);
+    const [showCoverModal, setShowCoverModal] = useState(false);
 
     const [resumeTitle, setResumeTitle] = useState(resumeData.resumeTitle || 'My FullStack Resume');
     const [toast, setToast] = useState({ message: '', type: 'success' });
 
-    const showToast = (message, type = 'success') => {
-        setToast({ message, type });
-    };
+    const showToast = (message, type = 'success') => setToast({ message, type });
 
-    // 🚀 FIXED: Generates & Downloads PDF directly using jsPDF
+    // PDF Download Handler
     const handleDownloadPDF = () => {
         try {
-            // 🚀 Selected Template passing directly
             generateResumePDF(resumeData, resumeTitle || 'Resume', selectedTemplate || 'template-ats');
             showToast("PDF Downloaded in selected template style!", "success");
         } catch (error) {
@@ -29,6 +46,7 @@ export default function FinalReviewStep() {
         }
     };
 
+    // Save to Profile
     const handleSaveToProfile = async () => {
         if (!resumeTitle.trim()) {
             showToast("Please enter a name for your resume file.", "danger");
@@ -66,6 +84,85 @@ export default function FinalReviewStep() {
         } finally {
             setDbLoading(false);
         }
+    };
+
+    // ATS Score Handler
+    const handleAnalyzeAts = async () => {
+        setAtsLoading(true);
+        setShowAtsModal(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(
+                'http://localhost:6050/api/ai/analyze-ats',
+                resumeData,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (res.data.success) {
+                setAtsResult(res.data);
+            }
+        } catch (error) {
+            showToast("Failed to connect to ATS AI service.", "danger");
+        } finally {
+            setAtsLoading(false);
+        }
+    };
+
+    // JD Matcher Handler
+    const handleMatchJd = async () => {
+        if (!jdText.trim()) {
+            showToast("Please paste Job Description text first.", "danger");
+            return;
+        }
+        setJdLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(
+                'http://localhost:6050/api/ai/match-jd',
+                { resumeData, jobDescription: jdText },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (res.data.success) {
+                setJdResult(res.data.data);
+                showToast("JD Match analysis complete!", "success");
+            }
+        } catch (error) {
+            showToast("Failed to run JD Matcher.", "danger");
+        } finally {
+            setJdLoading(false);
+        }
+    };
+
+    // Cover Letter Handler
+    const handleGenerateCoverLetter = async () => {
+        setCoverLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(
+                'http://localhost:6050/api/ai/cover-letter',
+                {
+                    resumeData,
+                    ...coverLetterInput
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (res.data.success) {
+                setCoverLetterText(res.data.coverLetter);
+                showToast("Cover Letter generated successfully!", "success");
+            }
+        } catch (error) {
+            showToast("Failed to generate Cover Letter.", "danger");
+        } finally {
+            setCoverLoading(false);
+        }
+    };
+
+    // Copy Cover Letter Text
+    const handleCopyCoverLetter = () => {
+        navigator.clipboard.writeText(coverLetterText);
+        showToast("Cover Letter copied to clipboard! 📋", "success");
     };
 
     const handleCreateNewResume = () => {
@@ -136,6 +233,46 @@ export default function FinalReviewStep() {
                             {dbLoading ? 'Saving...' : '☁️ Save to Profile'}
                         </button>
 
+                        {/* ANALYZE ATS BUTTON */}
+                        <button
+                            type="button"
+                            onClick={handleAnalyzeAts}
+                            className="btn btn-warning text-dark btn-sm py-1.5 px-3 fw-bold"
+                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                        >
+                            🚀 Analyze ATS
+                        </button>
+
+                        {/* MATCH TARGET JD BUTTON */}
+                        <button
+                            type="button"
+                            onClick={() => setShowJdModal(true)}
+                            className="btn btn-primary btn-sm py-1.5 px-3 fw-bold"
+                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                        >
+                            🎯 Match Target JD
+                        </button>
+
+                        {/* AI COVER LETTER BUTTON */}
+                        <button
+                            type="button"
+                            onClick={() => setShowCoverModal(true)}
+                            className="btn btn-outline-info btn-sm py-1.5 px-3 fw-bold"
+                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                        >
+                            ✉️ AI Cover Letter
+                        </button>
+
+                        {/* LIVE JOBS BUTTON */}
+                        <button
+                            type="button"
+                            onClick={() => setShowJobBoard(true)}
+                            className="btn btn-outline-warning btn-sm py-1.5 px-3 fw-bold"
+                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                        >
+                            💼 Live Jobs & Keywords
+                        </button>
+
                         {/* New Resume Action */}
                         <button
                             type="button"
@@ -146,7 +283,7 @@ export default function FinalReviewStep() {
                             ➕ New Resume
                         </button>
 
-                        {/* 🚀 DOWNLOAD PDF BUTTON */}
+                        {/* Download PDF Button */}
                         <button
                             type="button"
                             onClick={handleDownloadPDF}
@@ -163,12 +300,181 @@ export default function FinalReviewStep() {
                             🎉 Review & Download
                         </h4>
                         <p className="text-info text-opacity-75 small mb-0 fw-medium">
-                            Name your resume document, download a high-quality ATS PDF, and save to your cloud profile.
+                            Name your resume, analyze ATS compliance, match target JDs, generate AI cover letters, and export PDF.
                         </p>
                     </div>
 
                 </div>
             </div>
+
+            {/* LIVE JOBS MODAL (Placed outside button group layout) */}
+            <JobBoardModal
+                isOpen={showJobBoard}
+                onClose={() => setShowJobBoard(false)}
+                showToast={showToast}
+            />
+
+            {/* ATS SCORE MODAL */}
+            {showAtsModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content bg-dark text-white border border-secondary shadow-lg rounded-4">
+                            <div className="modal-header border-secondary pb-2">
+                                <h5 className="modal-title fw-bold text-info">📊 ATS Resume Score & Analysis</h5>
+                                <button type="button" className="btn-close btn-close-white" onClick={() => setShowAtsModal(false)}></button>
+                            </div>
+                            <div className="modal-body text-center py-4">
+                                {atsLoading ? (
+                                    <div className="py-4">
+                                        <div className="spinner-border text-info mb-3" role="status"></div>
+                                        <h6 className="fw-semibold text-white">Scanning keywords & ATS compliance...</h6>
+                                    </div>
+                                ) : atsResult && (
+                                    <div>
+                                        <div className="display-2 fw-bold text-info mb-0">{atsResult.score}<span className="fs-4 text-white-50">/100</span></div>
+                                        <span className="badge bg-info bg-opacity-25 text-info border border-info px-3 py-1 mt-1 mb-3">{atsResult.summaryRating}</span>
+                                        <div className="text-start bg-secondary bg-opacity-10 p-3 rounded-3 border border-secondary border-opacity-25">
+                                            <h6 className="fw-bold text-warning mb-2">💡 Recommended Improvements:</h6>
+                                            <ul className="small text-white-50 mb-0 ps-3">
+                                                {atsResult.feedback?.map((item, idx) => <li key={idx} className="mb-1">{item}</li>)}
+                                                {atsResult.criticalFixes?.map((item, idx) => <li key={idx} className="text-danger mb-1 font-monospace">{item}</li>)}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="modal-footer border-secondary pt-2">
+                                <button onClick={() => setShowAtsModal(false)} className="btn btn-outline-light btn-sm px-4">Close Analysis</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* JD MATCHER MODAL */}
+            {showJdModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
+                        <div className="modal-content bg-dark text-white border border-secondary shadow-lg rounded-4">
+                            <div className="modal-header border-secondary pb-2">
+                                <h5 className="modal-title fw-bold text-primary">🎯 Job Description (JD) Matcher</h5>
+                                <button type="button" className="btn-close btn-close-white" onClick={() => setShowJdModal(false)}></button>
+                            </div>
+                            <div className="modal-body p-4 text-start">
+                                <textarea rows={4} value={jdText} onChange={(e) => setJdText(e.target.value)} className="form-control glass-input text-white small mb-3" placeholder="Paste full JD here..." />
+                                <button onClick={handleMatchJd} disabled={jdLoading || !jdText.trim()} className="btn btn-primary fw-bold btn-sm w-100 mb-3">
+                                    {jdLoading ? "Analyzing Match..." : "⚡ Compare Resume with JD"}
+                                </button>
+                                {jdResult && (
+                                    <div className="p-3 border border-secondary border-opacity-25 rounded-3 bg-secondary bg-opacity-10">
+                                        <div className="d-flex justify-content-between align-items-center mb-2"><span className="fw-bold">Target Alignment:</span><span className="fs-5 fw-bold text-info">{jdResult.matchPercentage}% Match</span></div>
+                                        <div className="mb-2"><h6 className="fw-bold text-warning small mb-1">Missing Keywords:</h6>{jdResult.missingKeywords?.map((kw, i) => <span key={i} className="badge bg-danger bg-opacity-25 text-danger border border-danger me-1">{kw}</span>)}</div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="modal-footer border-secondary pt-2">
+                                <button onClick={() => setShowJdModal(false)} className="btn btn-outline-light btn-sm px-4">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* AI COVER LETTER POPUP MODAL */}
+            {showCoverModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
+                        <div className="modal-content bg-dark text-white border border-secondary shadow-lg rounded-4">
+                            <div className="modal-header border-secondary pb-2">
+                                <h5 className="modal-title fw-bold text-info d-flex align-items-center gap-2">
+                                    ✉️ AI Cover Letter Generator
+                                </h5>
+                                <button type="button" className="btn-close btn-close-white" onClick={() => setShowCoverModal(false)}></button>
+                            </div>
+
+                            <div className="modal-body p-4 text-start">
+                                <div className="row g-2 mb-3">
+                                    <div className="col-12 col-md-6">
+                                        <label className="form-label text-white-50 small mb-1">Target Job Title:</label>
+                                        <input
+                                            type="text"
+                                            value={coverLetterInput.jobTitle}
+                                            onChange={(e) => setCoverLetterInput({ ...coverLetterInput, jobTitle: e.target.value })}
+                                            placeholder="e.g. Senior Frontend Engineer"
+                                            className="form-control glass-input text-white small"
+                                        />
+                                    </div>
+                                    <div className="col-12 col-md-6">
+                                        <label className="form-label text-white-50 small mb-1">Company Name:</label>
+                                        <input
+                                            type="text"
+                                            value={coverLetterInput.companyName}
+                                            onChange={(e) => setCoverLetterInput({ ...coverLetterInput, companyName: e.target.value })}
+                                            placeholder="e.g. Google / Microsoft"
+                                            className="form-control glass-input text-white small"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label text-white-50 small mb-1">Optional JD Context:</label>
+                                    <textarea
+                                        rows={3}
+                                        value={coverLetterInput.jobDescription}
+                                        onChange={(e) => setCoverLetterInput({ ...coverLetterInput, jobDescription: e.target.value })}
+                                        placeholder="Paste short JD requirements or company description for better tailoring..."
+                                        className="form-control glass-input text-white small"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={handleGenerateCoverLetter}
+                                    disabled={coverLoading}
+                                    className="btn btn-info text-dark fw-bold btn-sm w-100 py-2 mb-4"
+                                >
+                                    {coverLoading ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2"></span>
+                                            Writing Tailored Cover Letter...
+                                        </>
+                                    ) : (
+                                        "✨ Generate Cover Letter with AI"
+                                    )}
+                                </button>
+
+                                {/* Cover Letter Output Display */}
+                                {coverLetterText && (
+                                    <div className="p-3 border border-info border-opacity-25 rounded-3 bg-dark">
+                                        <div className="d-flex justify-content-between align-items-center mb-2 border-bottom border-secondary pb-2">
+                                            <span className="fw-bold text-info small">Generated Cover Letter:</span>
+                                            <button
+                                                onClick={handleCopyCoverLetter}
+                                                className="btn btn-outline-info btn-xs py-1 px-2.5"
+                                                style={{ fontSize: '0.75rem' }}
+                                            >
+                                                📋 Copy to Clipboard
+                                            </button>
+                                        </div>
+                                        <textarea
+                                            rows={10}
+                                            value={coverLetterText}
+                                            onChange={(e) => setCoverLetterText(e.target.value)}
+                                            className="form-control glass-input text-white small border-0"
+                                            style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="modal-footer border-secondary pt-2">
+                                <button onClick={() => setShowCoverModal(false)} className="btn btn-outline-light btn-sm px-4">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

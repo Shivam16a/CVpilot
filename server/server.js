@@ -12,6 +12,7 @@ const authroute = require("./routes/authRoutes");
 const resumeroute = require("./routes/resumeRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const jobRoutes = require('./routes/jobRoutes');
 
 dotenv.config();
 const app = express();
@@ -57,6 +58,7 @@ const authLimiter = rateLimit({
 app.use("/api/auth/login", authLimiter);
 
 //  API Routes Endpoint Mounts
+app.use('/api/jobs', jobRoutes);
 app.use("/api/auth", authroute);
 app.use("/api/resume", resumeroute);
 app.use("/api/ai", aiRoutes);

@@ -1,36 +1,63 @@
-// client/src/pages/AdminDashboard.jsx (Updated file snippet)
+// client/src/pages/AdminDashboard.jsx
 import React, { useEffect, useState } from 'react';
-import { fetchAdminStats, fetchAllUsers, toggleBlockUserApi, toggleAdminRoleApi } from '../services/adminService';
+import axios from 'axios';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import Toast from '../components/Toast';
+import { toggleBlockUserApi, toggleAdminRoleApi } from '../services/adminService';
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({ totalUsers: 0, blockedUsers: 0, totalResumes: 0 });
     const [users, setUsers] = useState([]);
+    const [filteredUsers, setFilteredUsers] = useState([]);
+    const [templateData, setTemplateData] = useState([]);
+
+    const [filterType, setFilterType] = useState('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedUserResumes, setSelectedUserResumes] = useState(null); // Selected User Modal
     const [loading, setLoading] = useState(true);
+
+    // 🚀 Missing State Fixed
     const [actionLoading, setActionLoading] = useState({});
     const [toast, setToast] = useState({ message: '', type: 'success' });
 
     const showToast = (message, type = 'success') => setToast({ message, type });
 
-    const loadAdminData = async () => {
+    const loadAdminDashboardData = async () => {
         setLoading(true);
         try {
-            const [statsRes, usersRes] = await Promise.all([fetchAdminStats(), fetchAllUsers()]);
-            if (statsRes.success) setStats(statsRes.stats);
-            if (usersRes.success) setUsers(usersRes.users);
+            const token = localStorage.getItem('token');
+            const [statsRes, usersRes] = await Promise.all([
+                axios.get('http://localhost:6050/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } }),
+                axios.get('http://localhost:6050/api/admin/users-with-resumes', { headers: { Authorization: `Bearer ${token}` } })
+            ]);
+
+            if (statsRes.data.success) {
+                setStats(statsRes.data.stats);
+                setTemplateData(statsRes.data.templateAnalytics?.map(item => ({
+                    name: item._id || 'Standard ATS',
+                    count: item.count
+                })) || []);
+            }
+
+            if (usersRes.data.success) {
+                setUsers(usersRes.data.users);
+                setFilteredUsers(usersRes.data.users);
+            }
         } catch (error) {
-            console.error("Admin Load Error:", error);
-            showToast("Failed to load admin panel data.", "danger");
+            console.error("Dashboard Load Error:", error);
+            showToast("Failed to load analytics dashboard.", "danger");
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadAdminData();
+        loadAdminDashboardData();
     }, []);
 
-    // Toggle Block Action
+    // 🚀 Missing Action 1: Toggle Block Status
     const handleToggleBlock = async (userId, currentBlockedStatus, username) => {
         const actionText = currentBlockedStatus ? 'UNBLOCK' : 'BLOCK';
         if (!window.confirm(`Are you sure you want to ${actionText} user "${username}"?`)) return;
@@ -51,7 +78,7 @@ export default function AdminDashboard() {
         }
     };
 
-    // 🚀 NEW: Toggle Admin Role Action
+    // 🚀 Missing Action 2: Toggle Admin Role
     const handleToggleRole = async (userId, currentAdminStatus, username) => {
         const actionText = currentAdminStatus ? 'Demote to USER' : 'Promote to ADMIN';
         if (!window.confirm(`Are you sure you want to ${actionText} for "${username}"?`)) return;
@@ -72,96 +99,186 @@ export default function AdminDashboard() {
         }
     };
 
+    // Interactive Search & Filter Logic
+    useEffect(() => {
+        let result = users;
+        if (filterType === 'ACTIVE') result = result.filter(u => !u.isBlocked);
+        if (filterType === 'BLOCKED') result = result.filter(u => u.isBlocked);
+        if (filterType === 'ADMIN') result = result.filter(u => u.isAdmin);
+
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(u => u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q));
+        }
+
+        setFilteredUsers(result);
+    }, [filterType, searchQuery, users]);
+
     return (
-        <div className="container py-4 text-white">
+        <div className="container-fluid py-4 text-white" style={{ minHeight: '100vh', backgroundColor: '#0b0f19' }}>
             <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: '', type: 'success' })} />
 
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            {/* Header Control */}
+            <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25 flex-wrap gap-2">
                 <div>
-                    <h3 className="fw-bold glow-title m-0">🛡️ Admin Security Control Center</h3>
-                    <p className="text-white-50 small mb-0">Manage platform users, update access roles, and inspect security flags.</p>
+                    <h3 className="fw-bold text-info mb-1">📊 Executive Platform Analytics</h3>
+                    <p className="text-white-50 small mb-0">Monitor user activity, created resume sheets, and system performance graph metrics.</p>
                 </div>
-                <button onClick={loadAdminData} className="btn btn-outline-info btn-sm">🔄 Refresh Data</button>
+                <div className="d-flex align-items-center gap-2">
+                    <input
+                        type="text"
+                        placeholder="🔍 Search user name / email..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="form-control form-control-sm bg-dark text-white border-secondary"
+                        style={{ width: '220px' }}
+                    />
+                    <button onClick={loadAdminDashboardData} className="btn btn-outline-info btn-sm">🔄 Sync</button>
+                </div>
             </div>
 
-            {/* Metrics Cards */}
+            {/* 🚀 ANALYTICS PROGRESS CHARTS & METRICS ROW */}
             <div className="row g-3 mb-4">
-                <div className="col-12 col-md-4">
-                    <div className="p-3 border border-secondary border-opacity-25 rounded-3 bg-dark bg-opacity-50">
-                        <span className="text-white-50 small fw-medium">Total Registered Users</span>
-                        <h2 className="fw-bold text-info mb-0 mt-1">{stats.totalUsers}</h2>
+                {/* Metric Summary Cards */}
+                <div className="col-12 col-lg-4">
+                    <div className="d-flex flex-column gap-3 h-100">
+                        <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-3">
+                            <span className="text-white-50 extra-small font-monospace">REGISTERED ACCOUNTS</span>
+                            <h2 className="fw-bold text-info mb-0">{stats.totalUsers}</h2>
+                        </div>
+                        <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-3">
+                            <span className="text-white-50 extra-small font-monospace">TOTAL GENERATED RESUMES</span>
+                            <h2 className="fw-bold text-success mb-0">{stats.totalResumes}</h2>
+                        </div>
+                        <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-3">
+                            <span className="text-white-50 extra-small font-monospace">SUSPENDED ACCOUNTS</span>
+                            <h2 className="fw-bold text-danger mb-0">{stats.blockedUsers}</h2>
+                        </div>
                     </div>
                 </div>
-                <div className="col-12 col-md-4">
-                    <div className="p-3 border border-secondary border-opacity-25 rounded-3 bg-dark bg-opacity-50">
-                        <span className="text-white-50 small fw-medium">Blocked Suspicious Accounts</span>
-                        <h2 className="fw-bold text-danger mb-0 mt-1">{stats.blockedUsers}</h2>
+
+                {/* Template Usage Bar Chart */}
+                <div className="col-12 col-md-6 col-lg-4">
+                    <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-3 h-100">
+                        <h6 className="fw-bold text-info mb-3">📈 Template Usage Breakdown</h6>
+                        <div style={{ width: '100%', height: '180px' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={templateData}>
+                                    <XAxis dataKey="name" stroke="#8884d8" fontSize={10} />
+                                    <YAxis stroke="#8884d8" fontSize={10} />
+                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151' }} />
+                                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
-                <div className="col-12 col-md-4">
-                    <div className="p-3 border border-secondary border-opacity-25 rounded-3 bg-dark bg-opacity-50">
-                        <span className="text-white-50 small fw-medium">Total Cloud Resumes</span>
-                        <h2 className="fw-bold text-success mb-0 mt-1">{stats.totalResumes}</h2>
+
+                {/* User Status Pie Chart */}
+                <div className="col-12 col-md-6 col-lg-4">
+                    <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-3 h-100">
+                        <h6 className="fw-bold text-info mb-3">🎯 User Status Distribution</h6>
+                        <div style={{ width: '100%', height: '180px' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={[
+                                        { name: 'Active Users', value: stats.totalUsers - stats.blockedUsers },
+                                        { name: 'Blocked Users', value: stats.blockedUsers }
+                                    ]} dataKey="value" cx="50%" cy="50%" outerRadius={60}>
+                                        <Cell fill="#10b981" />
+                                        <Cell fill="#ef4444" />
+                                    </Pie>
+                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937' }} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* User List Table */}
-            <div className="p-3 border border-secondary border-opacity-25 rounded-3 bg-dark bg-opacity-50">
-                <h5 className="fw-bold mb-3 text-info">User Access & Role Control</h5>
+            {/* 🚀 USER MANAGEMENT TABLE WITH RESUME INSPECTION */}
+            <div className="p-3 border border-secondary border-opacity-25 rounded-3 bg-dark shadow-lg">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h5 className="fw-bold m-0 text-white">
+                        User Activity & Resume Monitoring <span className="badge bg-secondary ms-2">{filteredUsers.length} Users</span>
+                    </h5>
+                </div>
 
                 {loading ? (
-                    <div className="text-center py-4 text-white-50">Loading users data...</div>
+                    <div className="text-center py-5 text-white-50">Loading real-time user records...</div>
                 ) : (
                     <div className="table-responsive">
                         <table className="table table-dark table-hover align-middle mb-0" style={{ fontSize: '0.85rem' }}>
                             <thead>
                                 <tr className="text-white-50">
-                                    <th>Username</th>
+                                    <th>User Name</th>
                                     <th>Email</th>
                                     <th>Role</th>
-                                    <th>Account Status</th>
-                                    <th className="text-end">Role Action</th>
-                                    <th className="text-end">Block Action</th>
+                                    <th>Status</th>
+                                    <th>Resumes Created</th>
+                                    <th className="text-end">Inspect Resumes</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {users.map((u) => (
+                                {filteredUsers.map((u) => (
                                     <tr key={u._id}>
-                                        <td className="fw-bold">{u.username}</td>
+                                        <td className="fw-bold text-info">{u.username}</td>
                                         <td>{u.email}</td>
+                                        {/* 🛡️ DIRECT ROLE CHANGE DROPDOWN */}
                                         <td>
-                                            <span className={`badge ${u.isAdmin ? 'bg-primary' : 'bg-secondary'}`}>
-                                                {u.isAdmin ? '🛡️ Admin' : '👤 User'}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span className={`badge ${u.isBlocked ? 'bg-danger' : 'bg-success bg-opacity-25 text-success border border-success'}`}>
-                                                {u.isBlocked ? 'BLOCKED 🚫' : 'ACTIVE ✅'}
-                                            </span>
-                                        </td>
-
-                                        {/* 🚀 Role Switcher Action */}
-                                        <td className="text-end">
-                                            <button
+                                            <select
+                                                value={u.isAdmin ? 'admin' : 'user'}
                                                 disabled={actionLoading[`role_${u._id}`]}
-                                                onClick={() => handleToggleRole(u._id, u.isAdmin, u.username)}
-                                                className={`btn btn-xs py-1 px-2.5 ${u.isAdmin ? 'btn-outline-warning' : 'btn-outline-primary'}`}
-                                                style={{ fontSize: '0.75rem', borderRadius: '6px' }}
+                                                onChange={(e) => {
+                                                    const shouldBeAdmin = e.target.value === 'admin';
+                                                    if (shouldBeAdmin !== u.isAdmin) {
+                                                        handleToggleRole(u._id, u.isAdmin, u.username);
+                                                    }
+                                                }}
+                                                className={`form-select form-select-sm py-1 px-2 border-0 fw-bold ${u.isAdmin
+                                                    ? 'bg-primary text-white'
+                                                    : 'bg-secondary bg-opacity-25 text-white-50 border border-secondary'
+                                                    }`}
+                                                style={{ fontSize: '0.75rem', width: '110px', borderRadius: '6px', cursor: 'pointer' }}
                                             >
-                                                {actionLoading[`role_${u._id}`] ? 'Updating...' : (u.isAdmin ? 'Demote to User' : 'Make Admin')}
-                                            </button>
+                                                <option value="user" className="bg-dark text-white">👤 User</option>
+                                                <option value="admin" className="bg-dark text-white">🛡️ Admin</option>
+                                            </select>
                                         </td>
 
-                                        {/* Block / Unblock Action */}
+                                        {/* 🚫 DIRECT BLOCK / UNBLOCK DROPDOWN */}
+                                        <td>
+                                            <select
+                                                value={u.isBlocked ? 'blocked' : 'active'}
+                                                disabled={actionLoading[u._id]}
+                                                onChange={(e) => {
+                                                    const shouldBlock = e.target.value === 'blocked';
+                                                    if (shouldBlock !== u.isBlocked) {
+                                                        handleToggleBlock(u._id, u.isBlocked, u.username);
+                                                    }
+                                                }}
+                                                className={`form-select form-select-sm py-1 px-2 border-0 fw-bold ${u.isBlocked
+                                                    ? 'bg-danger text-white'
+                                                    : 'bg-success bg-opacity-25 text-success border border-success'
+                                                    }`}
+                                                style={{ fontSize: '0.75rem', width: '115px', borderRadius: '6px', cursor: 'pointer' }}
+                                            >
+                                                <option value="active" className="bg-dark text-success">ACTIVE</option>
+                                                <option value="blocked" className="bg-dark text-danger">BLOCKED</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <span className="badge bg-info bg-opacity-25 text-info fw-bold">
+                                                📄 {u.resumeCount || 0} Resumes
+                                            </span>
+                                        </td>
                                         <td className="text-end">
                                             <button
-                                                disabled={actionLoading[u._id]}
-                                                onClick={() => handleToggleBlock(u._id, u.isBlocked, u.username)}
-                                                className={`btn btn-xs py-1 px-2.5 ${u.isBlocked ? 'btn-success' : 'btn-outline-danger'}`}
-                                                style={{ fontSize: '0.75rem', borderRadius: '6px' }}
+                                                onClick={() => setSelectedUserResumes(u)}
+                                                className="btn btn-outline-info btn-xs py-1 px-2.5"
+                                                style={{ fontSize: '0.75rem' }}
                                             >
-                                                {actionLoading[u._id] ? 'Processing...' : (u.isBlocked ? 'Unblock' : 'Block')}
+                                                🔍 View Resume Titles ({u.resumeCount || 0})
                                             </button>
                                         </td>
                                     </tr>
@@ -171,6 +288,50 @@ export default function AdminDashboard() {
                     </div>
                 )}
             </div>
+
+            {/* 🚀 USER RESUME DETAILS MODAL POPUP */}
+            {selectedUserResumes && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
+                        <div className="modal-content bg-dark text-white border border-secondary rounded-4">
+                            <div className="modal-header border-secondary pb-2">
+                                <h5 className="modal-title fw-bold text-info">
+                                    📄 Resumes created by: {selectedUserResumes.username}
+                                </h5>
+                                <button type="button" className="btn-close btn-close-white" onClick={() => setSelectedUserResumes(null)}></button>
+                            </div>
+
+                            <div className="modal-body p-4 text-start">
+                                {selectedUserResumes.resumesList?.length === 0 ? (
+                                    <p className="text-white-50 mb-0">This user has not saved any resumes yet.</p>
+                                ) : (
+                                    <div className="d-flex flex-column gap-2">
+                                        {selectedUserResumes.resumesList?.map((r, i) => (
+                                            <div key={i} className="p-3 border border-secondary border-opacity-25 rounded-3 bg-secondary bg-opacity-10 d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 className="fw-bold text-white mb-0">{r.resumeTitle || 'Untitled Resume'}</h6>
+                                                    <span className="text-white-50 extra-small">
+                                                        Template: <span className="text-info">{r.template || 'Standard ATS'}</span> • Updated: {new Date(r.updatedAt).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                                <span className="badge bg-success bg-opacity-25 text-success border border-success extra-small">
+                                                    Saved in Cloud
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="modal-footer border-secondary pt-2">
+                                <button onClick={() => setSelectedUserResumes(null)} className="btn btn-outline-light btn-sm px-4">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

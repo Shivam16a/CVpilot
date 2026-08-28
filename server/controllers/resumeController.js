@@ -138,6 +138,21 @@ const getUserDashboardData = async (req, res) => {
     }
 };
 
+const deleteResume = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deleted = await Resume.findOneAndDelete({ _id: id, userId: req.user._id });
+
+        if (!deleted) {
+            return res.status(404).json({ success: false, message: "Resume not found or unauthorized" });
+        }
+
+        return res.status(200).json({ success: true, message: "Resume deleted successfully" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Delete operation failed" });
+    }
+};
+
 // Section-wise Fallback Aliases (Points to master save)
 const savePersonalInfo = saveMasterResume;
 const saveSummary = saveMasterResume;
@@ -157,5 +172,6 @@ module.exports = {
     saveAdditional,
     getResumeData,
     saveMasterResume,
-    getUserDashboardData
+    getUserDashboardData,
+    deleteResume
 };

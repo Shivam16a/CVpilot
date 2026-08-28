@@ -12,6 +12,7 @@ export default function Profile() {
     const [user, setUser] = useState(null);
     const [resumes, setResumes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [deletingId, setDeletingId] = useState(null);
     const [toast, setToast] = useState({ message: '', type: 'success' });
 
     const showToast = (message, type = 'success') => setToast({ message, type });
@@ -46,20 +47,45 @@ export default function Profile() {
         fetchDashboardData();
     }, []);
 
-    // 🚀 2. FIXED: Specific Resume Edit Handler
+    // 2. Edit Handler
     const handleEditResume = (resumeItem) => {
-        // Direct Zustand store update with clicked resume
         if (setResumeData) {
             setResumeData(resumeItem);
         }
-        
-        // Navigate with explicit resume ID in URL query parameter
         navigate(`/build-resume?id=${resumeItem._id}`);
     };
 
-    // 🚀 3. Create New Fresh Resume Action
+    // 🚀 3. NEW: Delete Resume Handler
+    const handleDeleteResume = async (resumeId, resumeTitle) => {
+        if (!window.confirm(`Are you sure you want to delete "${resumeTitle || 'Untitled Resume'}"?`)) {
+            return;
+        }
+
+        setDeletingId(resumeId);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.delete(`http://localhost:6050/api/resume/delete/${resumeId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (res.data.success) {
+                showToast("Resume deleted successfully!", "success");
+                // Local state update without page reload
+                setResumes(prev => prev.filter(r => r._id !== resumeId));
+            } else {
+                showToast(res.data.message || "Failed to delete resume.", "danger");
+            }
+        } catch (err) {
+            console.error("Delete Resume Error:", err);
+            showToast("Network error deleting resume.", "danger");
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    // 4. Create New Fresh Resume Action
     const handleCreateNew = () => {
-        startNewResume(); // Clear Zustand store state
+        startNewResume();
         navigate('/select-template');
     };
 
@@ -108,7 +134,7 @@ export default function Profile() {
                                 <div>
                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                         <span className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style={{ fontSize: '0.7rem' }}>
-                                            {item.templateId || 'STANDARD ATS'}
+                                            {item.templateId || item.template || 'STANDARD ATS'}
                                         </span>
                                         <span className="text-white-50 extra-small" style={{ fontSize: '0.75rem' }}>
                                             {new Date(item.updatedAt || item.createdAt).toLocaleDateString()}
@@ -116,21 +142,34 @@ export default function Profile() {
                                     </div>
                                     <h6 className="fw-bold text-white mb-1">{item.personalInfo?.fullName || item.resumeTitle || 'Untitled Resume'}</h6>
                                     <p className="text-info small mb-2">{item.resumeTitle || 'No Title'}</p>
-                                    
+
                                     <div className="text-white-50 extra-small mb-3" style={{ fontSize: '0.8rem' }}>
-                                        <div>Skills: {item.skills?.skillsList?.length || 0} Listed</div>
+                                        <div>Skills: {item.skills?.skillsList?.length || item.skills?.length || 0} Listed</div>
                                         <div>Experience: {item.experience?.length || 0} Items</div>
                                     </div>
                                 </div>
 
-                                {/* 🚀 CLICK HANDLER FIX: Calls handleEditResume with item object */}
-                                <button
-                                    onClick={() => handleEditResume(item)}
-                                    className="btn btn-outline-info btn-sm w-100 py-1.5"
-                                    style={{ borderRadius: '6px' }}
-                                >
-                                    ✏️ Edit & Preview
-                                </button>
+                                {/* 🚀 ACTION BUTTONS (Preview + Delete) */}
+                                <div className="d-flex gap-2">
+                                    <button
+                                        onClick={() => handleEditResume(item)}
+                                        className="btn btn-outline-info btn-sm w-100 py-1.5"
+                                        style={{ borderRadius: '6px' }}
+                                    >
+                                        ✏️ Preview / Edit
+                                    </button>
+
+                                    <button
+                                        disabled={deletingId === item._id}
+                                        onClick={() => handleDeleteResume(item._id, item.resumeTitle)}
+                                        className="btn btn-outline-danger btn-sm py-1.5 px-3"
+                                        style={{ borderRadius: '6px' }}
+                                        title="Delete Resume"
+                                    >
+                                        {deletingId === item._id ? '...' : '🗑️'}
+                                    </button>
+                                </div>
+
                             </div>
                         </div>
                     ))}

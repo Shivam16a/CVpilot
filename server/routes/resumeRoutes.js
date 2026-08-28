@@ -11,7 +11,8 @@ const {
     saveAdditional,
     getResumeData,
     saveMasterResume,
-    getUserDashboardData
+    getUserDashboardData,
+    deleteResume
 } = require('../controllers/resumeController');
 
 // 🚀 FIXED HERE: Added destructured brackets { protect }
@@ -25,6 +26,8 @@ router.post('/save-master', protect, saveMasterResume);
 
 // User Profile Dashboard Endpoint
 router.get('/user-dashboard', protect, getUserDashboardData);
+
+router.delete('/delete/:id', protect, deleteResume);
 
 // Section-wise Endpoints (Safely Preserved)
 router.post('/personal-info', protect, savePersonalInfo);

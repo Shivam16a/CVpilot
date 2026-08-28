@@ -26,6 +26,11 @@ export const fetchAllUsers = async () => {
     return res.json();
 };
 
+export const fetchUsersWithResumes = async () => {
+    const res = await axios.get(`${API_URL}/users-with-resumes`, getAuthHeaders());
+    return res.data;
+};
+
 // 3. Toggle User Block / Unblock
 export const toggleBlockUserApi = async (userId) => {
     const res = await fetch(`${API_BASE_URL}/toggle-block/${userId}`, {

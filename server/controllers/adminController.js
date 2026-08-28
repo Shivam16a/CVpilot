@@ -66,27 +66,48 @@ const toggleBlockUser = async (req, res) => {
 // 3. GET SYSTEM METRICS (Total Users, Resumes Count, Blocked Count)
 const getAdminStats = async (req, res) => {
     try {
-        const totalUsers = await User.countDocuments({});
+        const totalUsers = await User.countDocuments();
         const blockedUsers = await User.countDocuments({ isBlocked: true });
-        const totalResumes = await Resume.countDocuments({});
+        const totalResumes = await Resume.countDocuments();
+
+        // Template Popularity Analytics Data for Graph
+        const templateAnalytics = await Resume.aggregate([
+            { $group: { _id: "$template", count: { $sum: 1 } } }
+        ]);
 
         return res.status(200).json({
             success: true,
-            stats: {
-                totalUsers,
-                blockedUsers,
-                totalResumes
-            }
+            stats: { totalUsers, blockedUsers, totalResumes },
+            templateAnalytics
         });
     } catch (error) {
         console.error("Admin Stats Error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch admin stats."
-        });
+        return res.status(500).json({ success: false, message: "Stats fetch failed" });
     }
 };
 
+// 5. Fetch all users ALONG WITH their created resumes list
+const getAllUsersWithResumes = async (req, res) => {
+    try {
+        const users = await User.find().select('-password').lean();
+        const resumes = await Resume.find().select('userId resumeTitle template updatedAt createdAt').lean();
+
+        // Attach resumes array to each corresponding user object
+        const usersWithResumes = users.map(user => {
+            const userResumes = resumes.filter(r => String(r.userId) === String(user._id));
+            return {
+                ...user,
+                resumeCount: userResumes.length,
+                resumesList: userResumes
+            };
+        });
+
+        return res.status(200).json({ success: true, users: usersWithResumes });
+    } catch (error) {
+        console.error("Users Fetch Error:", error);
+        return res.status(500).json({ success: false, message: "Failed to fetch users" });
+    }
+};
 
 // TOGGLE USER ADMIN ROLE (User -> Admin OR Admin -> User)
 const toggleAdminRole = async (req, res) => {
@@ -133,5 +154,6 @@ module.exports = {
     getAllUsers,
     toggleBlockUser,
     getAdminStats,
-    toggleAdminRole 
+    toggleAdminRole,
+    getAllUsersWithResumes
 };

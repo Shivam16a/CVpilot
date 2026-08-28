@@ -5,7 +5,8 @@ const {
     getAllUsers,
     toggleBlockUser,
     getAdminStats,
-    toggleAdminRole
+    toggleAdminRole,
+    getAllUsersWithResumes
 } = require('../controllers/adminController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
@@ -20,5 +21,7 @@ router.patch('/toggle-block/:userId', protect, adminOnly, toggleBlockUser);
 
 // 4. NEW ROUTE: Toggle Admin Role (PATCH /api/admin/toggle-role/:userId)
 router.patch('/toggle-role/:userId', protect, adminOnly, toggleAdminRole);
+
+router.get('/users-with-resumes', protect, adminOnly, getAllUsersWithResumes);
 
 module.exports = router;
