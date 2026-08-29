@@ -11,6 +11,7 @@ import BuildResume from './pages/BuildResume';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminRoute from './components/AdminRoute';
 import NotFound from './pages/NotFound';
+import CVPilotAgent from './components/CVPilotAgent';
 
 // Protected Route Guard Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -68,6 +69,7 @@ export default function App() {
         {/* Fallback Catch-all Route: Redirect to Home */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <CVPilotAgent />
     </>
   );
 }

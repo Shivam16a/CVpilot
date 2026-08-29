@@ -298,8 +298,8 @@ const generateCoverLetter = async (req, res) => {
         }
 
         const candidateName = resumeData.personalInfo.fullName || "Applicant";
-        const skills = Array.isArray(resumeData.skills) 
-            ? resumeData.skills.join(', ') 
+        const skills = Array.isArray(resumeData.skills)
+            ? resumeData.skills.join(', ')
             : (resumeData.skills?.skillsList?.join(', ') || 'software development');
 
         const prompt = `You are a professional executive career coach and cover letter writer.
@@ -337,12 +337,55 @@ Guidelines:
     }
 };
 
-// Module Exports me include karein:
-module.exports = { 
-    generateSummary, 
-    generateProjectDesc, 
-    suggestSkills, 
+// 7.  STRICT CVPILOT AI AGENT CHATBOT
+// server/controllers/aiController.js
+const handleChatAgent = async (req, res) => {
+    try {
+        const { message } = req.body;
+
+        if (!message || !message.trim()) {
+            return res.status(400).json({ success: false, message: "Query message is required." });
+        }
+
+        const userName = req.user?.username || req.user?.name || 'Friend';
+
+        const systemPrompt = `You are CVPilot AI Assistant, a helpful and friendly career/resume copilot for CVPilot.
+User's Name: ${userName}
+
+STRICT CONVERSATIONAL RULES:
+1. DO NOT greet the user with "Hello ${userName}! Welcome to CVPilot!" in every message. You are already in an ongoing conversation.
+2. Answer the user's question directly, clearly, and naturally without repeating long introductory introductions or greetings unless explicitly asked.
+3. You MUST ONLY answer queries related to CVPilot features, resumes, ATS optimization, cover letters, and professional career advice.
+4. If asked anything out of scope, respond politely:
+"🎯 I am the CVPilot AI Assistant. My role is specifically to answer questions related to CVPilot, resumes, and career development. Please ask a question related to these topics! 😊"
+5. Use clean formatting, bold text for key points, and friendly emojis.
+
+User Question: ${message}`;
+
+        const aiResponse = await callGeminiAPI(systemPrompt);
+        const cleanResponse = aiResponse.replace(/```/g, '').trim();
+
+        return res.status(200).json({
+            success: true,
+            reply: cleanResponse
+        });
+
+    } catch (error) {
+        console.error("AI Agent Error:", error.message || error);
+        return res.status(500).json({
+            success: false,
+            message: "Assistant error: " + error.message
+        });
+    }
+};
+
+// Ensure exports include handleChatAgent
+module.exports = {
+    generateSummary,
+    generateProjectDesc,
+    suggestSkills,
     analyzeAtsScore,
     matchJobDescription,
-    generateCoverLetter 
+    generateCoverLetter,
+    handleChatAgent
 };
