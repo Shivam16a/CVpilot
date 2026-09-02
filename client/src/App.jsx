@@ -2,7 +2,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import Home from './pages/Home'; // 🚀 Import Home Page
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import TemplateSelection from './pages/TemplateSelection';
@@ -13,7 +13,11 @@ import AdminRoute from './components/AdminRoute';
 import NotFound from './pages/NotFound';
 import CVPilotAgent from './components/CVPilotAgent';
 
-// Protected Route Guard Wrapper
+// 🚀 Subscription & Upgrade Page Imports
+import SubscriptionGuard from './components/SubscriptionGuard';
+import UpgradePlan from './pages/UpgradePlan';
+
+// Protected Route Guard Wrapper (Checks basic login authentication)
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   return token ? children : <Navigate to="/login" replace />;
@@ -26,28 +30,48 @@ export default function App() {
       <Navbar />
 
       <Routes>
-        {/* 🚀 Landing / Home Page Route */}
+        {/* Landing / Home Page Route */}
         <Route path="/" element={<Home />} />
 
         {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Protected Dashboard Routes */}
+        {/* 🚀 Plan Upgrade / Pricing Page (Unlocked for all logged-in users) */}
         <Route
-          path="/select-template"
+          path="/upgrade-plan"
           element={
             <ProtectedRoute>
-              <TemplateSelection />
+              <UpgradePlan />
             </ProtectedRoute>
           }
         />
 
-        {/* Protected Admin Route */}
-        <Route element={<AdminRoute />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-        </Route>
+        {/* 🔒 Template Selection (Locked behind 1-month trial / Pro subscription) */}
+        <Route
+          path="/select-template"
+          element={
+            <ProtectedRoute>
+              <SubscriptionGuard>
+                <TemplateSelection />
+              </SubscriptionGuard>
+            </ProtectedRoute>
+          }
+        />
 
+        {/* 🔒 Resume Builder Workspace (Locked behind trial / Pro subscription) */}
+        <Route
+          path="/build-resume"
+          element={
+            <ProtectedRoute>
+              <SubscriptionGuard>
+                <BuildResume />
+              </SubscriptionGuard>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* User Profile Dashboard */}
         <Route
           path="/profile"
           element={
@@ -57,18 +81,15 @@ export default function App() {
           }
         />
 
-        <Route
-          path="/build-resume"
-          element={
-            <ProtectedRoute>
-              <BuildResume />
-            </ProtectedRoute>
-          }
-        />
+        {/* Protected Admin Route (Admin has full bypass across the platform) */}
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+        </Route>
 
-        {/* Fallback Catch-all Route: Redirect to Home */}
+        {/* Fallback Catch-all Route: 404 & Intrusion Trap */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+
       <CVPilotAgent />
     </>
   );

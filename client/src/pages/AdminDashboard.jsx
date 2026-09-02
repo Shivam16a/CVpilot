@@ -4,11 +4,21 @@ import axios from 'axios';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import Toast from '../components/Toast';
 import { toggleBlockUserApi, toggleAdminRoleApi } from '../services/adminService';
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+// 🚀 Naya Component Import
+import RevenueAnalytics from '../components/RevenueAnalytics';
 
 export default function AdminDashboard() {
-    const [stats, setStats] = useState({ totalUsers: 0, blockedUsers: 0, totalResumes: 0, uniqueVisitors: 0 });
+    const [stats, setStats] = useState({
+        totalUsers: 0,
+        blockedUsers: 0,
+        totalResumes: 0,
+        uniqueVisitors: 0,
+        totalRevenue: 0,
+        freeTrialUsers: 0,
+        upgradedUsers: 0,
+        expiredUsers: 0
+    });
+    const [monthlyGrowth, setMonthlyGrowth] = useState([]);
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [templateData, setTemplateData] = useState([]);
@@ -34,7 +44,8 @@ export default function AdminDashboard() {
             ]);
 
             if (statsRes.data.success) {
-                setStats(statsRes.data.stats || { totalUsers: 0, blockedUsers: 0, totalResumes: 0, uniqueVisitors: 0 });
+                setStats(statsRes.data.stats || {});
+                setMonthlyGrowth(statsRes.data.monthlyGrowth || []);
                 setSuspiciousLogs(statsRes.data.suspiciousLogs || []);
                 setTemplateData(statsRes.data.templateAnalytics?.map(item => ({
                     name: item._id || 'Standard ATS',
@@ -116,13 +127,13 @@ export default function AdminDashboard() {
         <div className="container-fluid py-4 text-white" style={{ minHeight: '100vh', backgroundColor: '#070a12' }}>
             <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: '', type: 'success' })} />
 
-            {/* Header */}
+            {/* Header Control */}
             <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25 flex-wrap gap-2">
                 <div>
                     <h3 className="fw-bold text-info mb-1 d-flex align-items-center gap-2">
                         🛡️ Threat Intelligence & Executive Analytics
                     </h3>
-                    <p className="text-white-50 small mb-0">De-duplicated unique device traffic, 404 intrusion traps & account governance.</p>
+                    <p className="text-white-50 small mb-0">De-duplicated unique device traffic, revenue telemetry & subscriber monitoring.</p>
                 </div>
                 <div className="d-flex align-items-center gap-2">
                     <input
@@ -137,11 +148,14 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* 🚀 1. METRICS ROW WITH UNIQUE PHYSICAL DEVICES / IP COUNTER */}
+            {/* 🚀 1. REVENUE, UPGRADES & MONTHLY GROWTH ANALYTICS (Modular Component) */}
+            <RevenueAnalytics stats={stats} monthlyGrowth={monthlyGrowth} />
+
+            {/* 2. BASE METRICS ROW */}
             <div className="row g-3 mb-4">
                 <div className="col-12 col-sm-6 col-xl-3">
                     <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-4 h-100 shadow-sm">
-                        <span className="text-white-50 extra-small font-monospace">UNIQUE PHYSICAL DEVICES (IPs)</span>
+                        <span className="text-white-50 extra-small font-monospace">UNIQUE DEVICES (IPs)</span>
                         <h2 className="fw-bold text-primary mb-0 mt-1">{stats.uniqueVisitors}</h2>
                         <span className="text-white-50 extra-small">De-duplicated across all accounts</span>
                     </div>
@@ -172,7 +186,7 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* 🚀 2. ANALYTICS PROGRESS CHARTS */}
+            {/* 3. ADOPTION & STATUS CHARTS */}
             <div className="row g-3 mb-4">
                 <div className="col-12 col-lg-6">
                     <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-4 h-100">
@@ -211,7 +225,7 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* 🚀 3. SUSPICIOUS ROUTE ATTEMPTS & 404 INTRUSION TRAP MONITOR */}
+            {/* 4. SUSPICIOUS ROUTE INTRUSION LOGS */}
             <div className="p-3.5 border border-danger border-opacity-30 rounded-4 bg-dark shadow-lg mb-4" style={{ background: 'rgba(20, 10, 15, 0.7)' }}>
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <div>
@@ -268,7 +282,7 @@ export default function AdminDashboard() {
                 )}
             </div>
 
-            {/* 🚀 4. USER MANAGEMENT TABLE WITH RESUME INSPECTION */}
+            {/* 5. USER MANAGEMENT TABLE */}
             <div className="p-3 border border-secondary border-opacity-25 rounded-4 bg-dark shadow-lg">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <h5 className="fw-bold m-0 text-white">

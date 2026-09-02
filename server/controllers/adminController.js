@@ -66,19 +66,78 @@ const toggleBlockUser = async (req, res) => {
 // 3. GET SYSTEM & SECURITY METRICS (Total Users, Resumes, Unique Devices & Suspicious Logs)
 const getAdminStats = async (req, res) => {
     try {
+        const now = new Date();
+
         const totalUsers = await User.countDocuments();
         const blockedUsers = await User.countDocuments({ isBlocked: true });
         const totalResumes = await Resume.countDocuments();
-
-        // 🚀 Count unique physical visitor devices by unique IP
         const uniqueVisitors = await Visitor.countDocuments();
 
-        // 🚀 Fetch latest 35 Suspicious Route Intrusion attempts
+        // 🚀 1. Subscription Status Counters
+        // a) Free Trial Users (Trial plan & trial date in future)
+        const freeTrialUsers = await User.countDocuments({
+            'subscription.plan': 'TRIAL',
+            'subscription.trialEndsAt': { $gte: now }
+        });
+
+        // b) Upgraded Active Paid Users (Monthly or Yearly & date in future)
+        const upgradedUsers = await User.countDocuments({
+            'subscription.plan': { $in: ['PRO_MONTHLY', 'PRO_YEARLY'] },
+            'subscription.currentPeriodEnd': { $gte: now }
+        });
+
+        // c) Expired Users (Either trial ended or paid period ended)
+        const expiredUsers = await User.countDocuments({
+            $or: [
+                { 'subscription.plan': 'TRIAL', 'subscription.trialEndsAt': { $lt: now } },
+                { 'subscription.plan': { $in: ['PRO_MONTHLY', 'PRO_YEARLY'] }, 'subscription.currentPeriodEnd': { $lt: now } },
+                { 'subscription.status': 'EXPIRED' }
+            ]
+        });
+
+        // 🚀 2. Revenue Aggregation (Monthly Pro = ₹199, Yearly Pro = ₹1499)
+        const paidUsersList = await User.find({
+            'subscription.razorpayPaymentId': { $ne: null }
+        }).select('subscription createdAt updatedAt');
+
+        let totalRevenue = 0;
+        paidUsersList.forEach(u => {
+            if (u.subscription?.plan === 'PRO_YEARLY') totalRevenue += 1499;
+            else if (u.subscription?.plan === 'PRO_MONTHLY') totalRevenue += 199;
+        });
+
+        // 🚀 3. Monthly Revenue Growth Data (Last 6 Months)
+        const monthlyGrowth = [];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const nextD = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+            const mLabel = monthNames[d.getMonth()];
+
+            // Count users who upgraded in this calendar month
+            const monthUsers = paidUsersList.filter(u => {
+                const subDate = new Date(u.updatedAt || u.createdAt);
+                return subDate >= d && subDate < nextD;
+            });
+
+            let mRev = 0;
+            monthUsers.forEach(u => {
+                if (u.subscription?.plan === 'PRO_YEARLY') mRev += 1499;
+                else if (u.subscription?.plan === 'PRO_MONTHLY') mRev += 199;
+            });
+
+            monthlyGrowth.push({
+                month: mLabel,
+                revenue: mRev,
+                conversions: monthUsers.length
+            });
+        }
+
         const suspiciousLogs = await SuspiciousLog.find()
             .sort({ timestamp: -1 })
             .limit(35);
 
-        // Template Popularity Analytics Data for Graph
         const templateAnalytics = await Resume.aggregate([
             { $group: { _id: "$template", count: { $sum: 1 } } }
         ]);
@@ -89,8 +148,14 @@ const getAdminStats = async (req, res) => {
                 totalUsers,
                 blockedUsers,
                 totalResumes,
-                uniqueVisitors // 🚀 Unique Devices count
+                uniqueVisitors,
+                // 🚀 Subscription & Revenue Metrics
+                totalRevenue,
+                freeTrialUsers,
+                upgradedUsers,
+                expiredUsers
             },
+            monthlyGrowth,
             templateAnalytics,
             suspiciousLogs
         });

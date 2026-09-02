@@ -15,27 +15,29 @@ const {
     deleteResume
 } = require('../controllers/resumeController');
 
-// 🚀 FIXED HERE: Added destructured brackets { protect }
 const { protect } = require('../middleware/authMiddleware');
+// 🚀 Strict Subscription & 1-Month Trial Guard Import
+const { checkSubscription } = require('../middleware/subscriptionMiddleware');
 
-// Get saved resume for auto-filling inputs
+// Get saved resume for auto-filling inputs (Allowed for read)
 router.get('/get-resume', protect, getResumeData);
 
-// Primary Master Overwrite Route (Save to Profile Action)
-router.post('/save-master', protect, saveMasterResume);
-
-// User Profile Dashboard Endpoint
+// User Profile Dashboard Endpoint (Allowed to view saved items)
 router.get('/user-dashboard', protect, getUserDashboardData);
 
-router.delete('/delete/:id', protect, deleteResume);
+// 🔒 Primary Master Overwrite Route (Blocked if trial/plan expired)
+router.post('/save-master', protect, checkSubscription, saveMasterResume);
 
-// Section-wise Endpoints (Safely Preserved)
-router.post('/personal-info', protect, savePersonalInfo);
-router.post('/summary', protect, saveSummary);
-router.post('/skills', protect, saveSkills);
-router.post('/education', protect, saveEducation);
-router.post('/experience', protect, saveExperience);
-router.post('/projects', protect, saveProjects);
-router.post('/additional', protect, saveAdditional);
+// 🔒 Delete Resume Action (Blocked if trial/plan expired)
+router.delete('/delete/:id', protect, checkSubscription, deleteResume);
+
+// 🔒 Section-wise Save Endpoints (Blocked if trial/plan expired)
+router.post('/personal-info', protect, checkSubscription, savePersonalInfo);
+router.post('/summary', protect, checkSubscription, saveSummary);
+router.post('/skills', protect, checkSubscription, saveSkills);
+router.post('/education', protect, checkSubscription, saveEducation);
+router.post('/experience', protect, checkSubscription, saveExperience);
+router.post('/projects', protect, checkSubscription, saveProjects);
+router.post('/additional', protect, checkSubscription, saveAdditional);
 
 module.exports = router;

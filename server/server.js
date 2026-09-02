@@ -14,6 +14,7 @@ const resumeroute = require("./routes/resumeRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const jobRoutes = require('./routes/jobRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 dotenv.config();
 const app = express();
@@ -95,6 +96,7 @@ app.use("/api/auth", authroute);
 app.use("/api/resume", resumeroute);
 app.use("/api/ai", aiRoutes);
 app.use("/api/admin", adminRoutes);
+app.use('/api/payment', paymentRoutes);
 
 const PORT = process.env.PORT || 6050;
 

@@ -53,12 +53,17 @@ export default function Home() {
                             </p>
 
                             <div className="d-flex flex-wrap align-items-center gap-3">
+                                
+
+                                {/* 💎 Upgrade Plan Button */}
                                 <button
-                                    onClick={() => navigate('/select-template')}
-                                    className="btn btn-info text-dark fw-bold px-4 py-3 shadow-lg fs-6 rounded-3 d-flex align-items-center gap-2"
+                                    onClick={() => navigate('/upgrade-plan')}
+                                    className="btn btn-warning text-dark fw-bold px-4 py-3 fs-6 rounded-3 shadow-sm d-flex align-items-center gap-2"
                                 >
-                                    🚀 Build Free Resume Now
+                                    <span>👑</span>
+                                    <span>Upgrade Plan</span>
                                 </button>
+
                                 <button
                                     onClick={() => {
                                         const el = document.getElementById('features-deepdive');
@@ -143,7 +148,7 @@ export default function Home() {
                                 Real AI ATS Score Inspector & Fixer.
                             </h2>
                             <p className="text-white-50 lead mb-4" style={{ fontSize: '1rem' }}>
-                                Standard resume builders only format text. CVPilot's Gemini 1.5 AI evaluates your content against top Applicant Tracking Systems (ATS) like Greenhouse, Lever, and Workday.
+                                Standard resume builders only format text. CVPilot's Gemini AI evaluates your content against top Applicant Tracking Systems (ATS) like Greenhouse, Lever, and Workday.
                             </p>
 
                             <ul className="list-unstyled text-white-50 d-flex flex-column gap-2.5">
@@ -292,22 +297,22 @@ export default function Home() {
                                 <tr>
                                     <td className="p-3 fw-semibold">Target Job Description Matching</td>
                                     <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ 1-Click JD Sync & Gap Analysis</td>
-                                    <td className="p-3 text-center text-danger">❌ Manual Manual Copying</td>
+                                    <td className="p-3 text-center text-danger">❌ Manual Copying</td>
                                 </tr>
                                 <tr>
                                     <td className="p-3 fw-semibold">Built-in AI Cover Letter Writer</td>
-                                    <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ Included Free</td>
-                                    <td className="p-3 text-center text-danger">❌ Separate Paid Plan</td>
+                                    <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ Included with Letterhead PDF</td>
+                                    <td className="p-3 text-center text-danger">❌ Separate Paid Add-on</td>
                                 </tr>
                                 <tr>
-                                    <td className="p-3 fw-semibold">Live Job Board & Keyword Auto-Inserter</td>
+                                    <td className="p-3 fw-semibold">Live Job Board & Keyword Inserter</td>
                                     <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ Live Integrated Feed</td>
                                     <td className="p-3 text-center text-danger">❌ Not Available</td>
                                 </tr>
                                 <tr>
                                     <td className="p-3 fw-semibold">PDF Export & Cloud Profiles</td>
-                                    <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ Unlimited Clean Export</td>
-                                    <td className="p-3 text-center text-warning">⚠️ Paywall per Download</td>
+                                    <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ Clean Formatted Export</td>
+                                    <td className="p-3 text-center text-warning">⚠️ Paywall per Single Export</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -326,17 +331,112 @@ export default function Home() {
                             <p className="text-white-50 lead max-w-xl mx-auto mb-4" style={{ fontSize: '1.05rem' }}>
                                 Join thousands of engineers, product managers, and developers who passed ATS filters and got hired.
                             </p>
-                            <button
-                                onClick={() => navigate('/select-template')}
-                                className="btn btn-info text-dark fw-bold btn-lg px-5 py-3 shadow-lg rounded-3"
-                            >
-                                ⚡ Create Your Free Resume Now
-                            </button>
+
+                            <div className="d-flex flex-wrap justify-content-center align-items-center gap-3">
+                                <button
+                                    onClick={() => navigate('/select-template')}
+                                    className="btn btn-info text-dark fw-bold btn-lg px-5 py-3 shadow-lg rounded-3"
+                                >
+                                    ⚡ Create Your Free Resume Now
+                                </button>
+                                <button
+                                    onClick={() => navigate('/upgrade-plan')}
+                                    className="btn btn-outline-warning fw-bold btn-lg px-4 py-3 rounded-3 d-flex align-items-center gap-2"
+                                >
+                                    <span>👑</span>
+                                    <span>View Pro Plans</span>
+                                </button>
+                            </div>
                         </div>
 
                     </div>
                 </div>
             </section>
+
+
+            {/* ==================== 7. FOOTER SECTION ==================== */}
+            <footer className="border-top border-secondary border-opacity-20 pt-5 pb-4 bg-black bg-opacity-40">
+                <div className="container">
+                    <div className="row g-4 justify-content-between text-start mb-5">
+
+                        {/* Brand Column */}
+                        <div className="col-12 col-lg-4">
+                            <div className="d-flex align-items-center gap-2 mb-3 cursor-pointer" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+                                <span className="p-1.5 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-25 text-info fw-bold">⚡</span>
+                                <h4 className="fw-extrabold text-white m-0 tracking-wider">
+                                    CV<span className="text-info">Pilot</span>
+                                </h4>
+                            </div>
+                            <p className="text-white-50 small mb-3" style={{ lineHeight: '1.7', maxWidth: '320px' }}>
+                                The intelligent ATS-proof resume builder designed for developers, designers, and tech leaders. Built-in Gemini AI scoring, JD matcher, and tailored application generation.
+                            </p>
+                            <div className="d-flex align-items-center gap-2">
+                                <span className="badge bg-dark border border-secondary border-opacity-30 text-white-50 py-1.5 px-2.5 rounded-pill font-monospace" style={{ fontSize: '0.7rem' }}>
+                                    v1.0 Production
+                                </span>
+                                <span className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-20 extra-small" style={{ fontSize: '0.7rem' }}>
+                                    <span className="spinner-grow spinner-grow-sm text-success" style={{ width: '6px', height: '6px' }}></span>
+                                    System Active
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Quick Navigation Links */}
+                        <div className="col-6 col-md-3 col-lg-2">
+                            <h6 className="fw-bold text-white mb-3 text-uppercase extra-small tracking-wider">Workspace</h6>
+                            <ul className="list-unstyled d-flex flex-column gap-2 small text-white-50">
+                                <li><span onClick={() => navigate('/select-template')} className="cursor-pointer hover-text-info" style={{ cursor: 'pointer' }}>Choose Templates</span></li>
+                                <li><span onClick={() => navigate('/build-resume')} className="cursor-pointer hover-text-info" style={{ cursor: 'pointer' }}>Resume Builder</span></li>
+                                <li><span onClick={() => navigate('/profile')} className="cursor-pointer hover-text-info" style={{ cursor: 'pointer' }}>Profile & Socials</span></li>
+                                <li><span onClick={() => navigate('/upgrade-plan')} className="cursor-pointer text-warning fw-bold" style={{ cursor: 'pointer' }}>Upgrade to Pro 👑</span></li>
+                            </ul>
+                        </div>
+
+                        {/* AI & Features Links */}
+                        <div className="col-6 col-md-3 col-lg-3">
+                            <h6 className="fw-bold text-white mb-3 text-uppercase extra-small tracking-wider">Capabilities</h6>
+                            <ul className="list-unstyled d-flex flex-column gap-2 small text-white-50">
+                                <li><span className="text-white-50">Gemini ATS Inspector</span></li>
+                                <li><span className="text-white-50">Job Description Matcher</span></li>
+                                <li><span className="text-white-50">AI Cover Letter Generator</span></li>
+                                <li><span className="text-white-50">Multi-Format PDF Exporter</span></li>
+                                <li><span className="text-white-50">Hardware IP Threat Logging</span></li>
+                            </ul>
+                        </div>
+
+                        {/* Security & Payment Standards */}
+                        <div className="col-12 col-md-6 col-lg-3">
+                            <h6 className="fw-bold text-white mb-3 text-uppercase extra-small tracking-wider">Secure Infrastructure</h6>
+                            <p className="text-white-50 extra-small mb-3" style={{ lineHeight: '1.6' }}>
+                                Payments and user sessions are encrypted end-to-end via 256-Bit SSL and Razorpay compliance.
+                            </p>
+                            <div className="p-3 rounded-3 border border-secondary border-opacity-25 bg-dark bg-opacity-50">
+                                <div className="d-flex align-items-center gap-2 mb-1.5">
+                                    <span className="text-success fw-bold">🔒</span>
+                                    <span className="fw-bold small text-white">Razorpay Secure Verified</span>
+                                </div>
+                                <span className="extra-small text-white-50 d-block" style={{ fontSize: '0.72rem' }}>
+                                    UPI • Debit/Credit Cards • Net Banking
+                                </span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Bottom Sub-footer */}
+                    <div className="border-top border-secondary border-opacity-15 pt-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 text-white-50 extra-small" style={{ fontSize: '0.78rem' }}>
+                        <span>© 2026 CVPilot Inc. All rights reserved. Designed for High-Impact Careers.</span>
+                        <div className="d-flex gap-3">
+                            <span className="cursor-pointer hover-text-white" onClick={() => navigate('/upgrade-plan')} style={{ cursor: 'pointer' }}>Pricing & Plans</span>
+                            <span>•</span>
+                            <span className="cursor-pointer hover-text-white" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>Account Dashboard</span>
+                            <span>•</span>
+                            <span className="text-white-50">Terms & Privacy</span>
+                        </div>
+                    </div>
+
+                </div>
+            </footer>
 
         </div>
     );
