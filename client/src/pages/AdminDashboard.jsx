@@ -6,6 +6,7 @@ import Toast from '../components/Toast';
 import { toggleBlockUserApi, toggleAdminRoleApi } from '../services/adminService';
 // 🚀 Naya Component Import
 import RevenueAnalytics from '../components/RevenueAnalytics';
+import AdminCommunications from '../components/AdminCommunications';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({
@@ -281,6 +282,13 @@ export default function AdminDashboard() {
                     </div>
                 )}
             </div>
+            
+            {/* 🚀 INQUIRIES & AUTOMATED EMAIL DISPATCHER */}
+            <AdminCommunications
+                users={users}
+                suspiciousLogs={suspiciousLogs}
+                showToast={showToast}
+            />
 
             {/* 5. USER MANAGEMENT TABLE */}
             <div className="p-3 border border-secondary border-opacity-25 rounded-4 bg-dark shadow-lg">

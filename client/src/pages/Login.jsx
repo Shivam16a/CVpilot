@@ -2,7 +2,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Toast from "../components/Toast"; // 🚀 Added Toast Component
+import Toast from "../components/Toast";
 
 function Login() {
     const navigate = useNavigate();
@@ -35,15 +35,31 @@ function Login() {
             );
 
             if (res.data.success) {
-                // 🚀 CRITICAL FIX: Storing BOTH Token and User Object in LocalStorage
+                const loggedInUser = res.data.user;
+
+                // 🚀 1. Store Fresh Token & User Data in LocalStorage
                 localStorage.setItem("token", res.data.token);
-                localStorage.setItem("user", JSON.stringify(res.data.user));
+                localStorage.setItem("user", JSON.stringify(loggedInUser));
 
                 showToast("Login Successful 🎉", "success");
 
-                // Smooth delay to let user see the success toast
+                // 🚀 2. Check Subscription / Trial Status for Smart Redirect
+                const now = new Date();
+                const trialEnd = new Date(loggedInUser?.subscription?.trialEndsAt || loggedInUser?.createdAt || 0);
+                const periodEnd = new Date(loggedInUser?.subscription?.currentPeriodEnd || trialEnd);
+
+                const isTrialActive = loggedInUser?.subscription?.plan === 'TRIAL' && now <= trialEnd;
+                const isPaidActive = ['PRO_MONTHLY', 'PRO_YEARLY'].includes(loggedInUser?.subscription?.plan) && now <= periodEnd;
+                const isAdmin = loggedInUser?.isAdmin;
+
                 setTimeout(() => {
-                    navigate("/select-template");
+                    // Agar Admin hai ya subscription active hai -> Builder/Template par bhejo
+                    if (isAdmin || isTrialActive || isPaidActive) {
+                        navigate("/select-template");
+                    } else {
+                        // Agar plan expire ho chuka hai -> Seedha Upgrade Plan page par bhejo
+                        navigate("/upgrade-plan");
+                    }
                 }, 1000);
             }
         } catch (error) {

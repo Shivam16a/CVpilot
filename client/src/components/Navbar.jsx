@@ -1,11 +1,15 @@
 // client/src/components/Navbar.jsx
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useResumeStore } from '../store/useResumeStore';
 
 export default function Navbar() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { startNewResume } = useResumeStore();
+
+    // 📱 Mobile & Tablet Menu Toggle State
+    const [isOpen, setIsOpen] = useState(false);
 
     // 🔍 Get Logged-in User Data from Local Storage
     const token = localStorage.getItem('token');
@@ -15,11 +19,17 @@ export default function Navbar() {
     // 🔒 Check if user is logged in AND has Admin privileges
     const isAdmin = token && user && (user.isAdmin === true);
 
+    // Auto-close menu on route navigation
+    useEffect(() => {
+        setIsOpen(false);
+    }, [location.pathname]);
+
     const handleLogout = () => {
         if (window.confirm("Are you sure you want to log out?")) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             startNewResume();
+            setIsOpen(false);
             navigate('/login');
         }
     };
@@ -33,17 +43,19 @@ export default function Navbar() {
                     ⚡ CVPilot
                 </Link>
 
+                {/* Hamburger Toggler for Mobile & Tablet */}
                 <button
-                    className="navbar-toggler"
+                    className="navbar-toggler border-secondary"
                     type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#navbarContent"
+                    onClick={() => setIsOpen(!isOpen)}
+                    aria-label="Toggle navigation"
                 >
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
-                <div className="collapse navbar-collapse" id="navbarContent">
-                    <ul className="navbar-nav me-auto mb-2 mb-lg-0 ms-md-4 gap-1">
+                {/* Responsive Collapsible Area */}
+                <div className={`collapse navbar-collapse ${isOpen ? 'show mt-3 mt-lg-0' : ''}`} id="navbarContent">
+                    <ul className="navbar-nav me-auto mb-3 mb-lg-0 ms-lg-4 gap-1">
                         <li className="nav-item">
                             <Link to="/select-template" className="nav-link text-white-50 hover-white">
                                 🎨 Templates
@@ -62,9 +74,9 @@ export default function Navbar() {
                             </li>
                         )}
 
-                        {/* 🚀 ADMIN ONLY BUTTON (Hidden for Normal Users) */}
+                        {/* 🚀 ADMIN ONLY BUTTON */}
                         {isAdmin && (
-                            <li className="nav-item ms-md-2">
+                            <li className="nav-item ms-lg-2">
                                 <Link
                                     to="/admin"
                                     className="nav-link badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50 px-2.5 py-1.5 mt-1 d-inline-flex align-items-center gap-1"
@@ -76,11 +88,11 @@ export default function Navbar() {
                         )}
                     </ul>
 
-                    {/* Auth Action Buttons */}
-                    <div className="d-flex align-items-center gap-2">
+                    {/* Auth Action Buttons (Desktop Inline, Mobile/Tablet Friendly) */}
+                    <div className="d-flex align-items-center gap-2 flex-wrap pt-2 pt-lg-0 border-top border-secondary border-opacity-25 border-top-0-lg">
                         {token ? (
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="small text-white-50 d-none d-sm-inline">
+                            <div className="d-flex align-items-center justify-content-between w-100 w-lg-auto gap-3">
+                                <span className="small text-white-50">
                                     Hi, <span className="text-white fw-medium">{user?.username || 'User'}</span>
                                 </span>
                                 <button
@@ -92,14 +104,14 @@ export default function Navbar() {
                                 </button>
                             </div>
                         ) : (
-                            <>
-                                <Link to="/login" className="btn btn-outline-light btn-sm py-1 px-3">
+                            <div className="d-flex align-items-center gap-2 w-100 w-lg-auto">
+                                <Link to="/login" className="btn btn-outline-light btn-sm py-1 px-3 flex-grow-1 flex-lg-grow-0 text-center">
                                     Login
                                 </Link>
-                                <Link to="/register" className="btn btn-info text-dark fw-bold btn-sm py-1 px-3">
+                                <Link to="/register" className="btn btn-info text-dark fw-bold btn-sm py-1 px-3 flex-grow-1 flex-lg-grow-0 text-center">
                                     Sign Up
                                 </Link>
-                            </>
+                            </div>
                         )}
                     </div>
 

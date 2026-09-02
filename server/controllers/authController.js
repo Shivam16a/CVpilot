@@ -153,7 +153,8 @@ exports.login = async (req, res) => {
                 phone: user.phone,
                 isAdmin: user.isAdmin === true,
                 isVerified: user.isVerified,
-                isBlocked: user.isBlocked === true
+                isBlocked: user.isBlocked === true,
+                subscription: user.subscription
             },
         });
     } catch (error) {

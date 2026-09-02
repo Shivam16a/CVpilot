@@ -360,7 +360,7 @@ export default function FinalReviewStep() {
                         <h4 className="glow-title mb-1 d-flex align-items-center gap-2" style={{ fontSize: '1.35rem' }}>
                             🎉 Review & Download
                         </h4>
-                        <p className="text-info text-opacity-75 small mb-0 fw-medium">
+                        <p className="text-white text-opacity-75 small mb-0 fw-medium">
                             Name your resume, analyze ATS compliance, match target JDs, generate AI cover letters, and export PDF.
                         </p>
                     </div>

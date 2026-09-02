@@ -1,17 +1,29 @@
 // client/src/pages/Home.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import Toast from '../components/Toast';
 
 export default function Home() {
     const navigate = useNavigate();
-
-    // 🖱️ Interactive Mouse Movement Parallax State
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+    // 📬 Get In Touch Form State
+    const [contactForm, setContactForm] = useState({
+        name: '',
+        email: '',
+        subjectType: 'GENERAL',
+        message: ''
+    });
+    const [contactLoading, setContactLoading] = useState(false);
+    const [toast, setToast] = useState({ message: '', type: 'success' });
+
+    const showToast = (message, type = 'success') => setToast({ message, type });
 
     useEffect(() => {
         const handleMouseMove = (e) => {
             const { clientX, clientY } = e;
-            const x = (clientX / window.innerWidth - 0.5) * 30; // Max 30px tilt offset
+            const x = (clientX / window.innerWidth - 0.5) * 30;
             const y = (clientY / window.innerHeight - 0.5) * 30;
             setMousePos({ x, y });
         };
@@ -20,8 +32,25 @@ export default function Home() {
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
 
+    const handleContactSubmit = async (e) => {
+        e.preventDefault();
+        setContactLoading(true);
+        try {
+            const res = await axios.post('http://localhost:6050/api/contact/send', contactForm);
+            if (res.data.success) {
+                showToast(res.data.message || "Message sent successfully!", "success");
+                setContactForm({ name: '', email: '', subjectType: 'GENERAL', message: '' });
+            }
+        } catch (err) {
+            showToast(err.response?.data?.message || "Failed to send message.", "danger");
+        } finally {
+            setContactLoading(false);
+        }
+    };
+
     return (
         <div className="bg-dark text-white overflow-hidden" style={{ backgroundColor: '#070a12' }}>
+            <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: '', type: 'success' })} />
 
             {/* Ambient Mouse Glow Overlay */}
             <div
@@ -37,7 +66,6 @@ export default function Home() {
                 <div className="container position-relative z-1">
                     <div className="row align-items-center g-5">
 
-                        {/* Left Hero Text */}
                         <div className="col-12 col-lg-6 text-start">
                             <span className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2 rounded-pill small fw-bold mb-3 d-inline-flex align-items-center gap-2">
                                 <span className="spinner-grow spinner-grow-sm text-info" style={{ width: '8px', height: '8px' }}></span>
@@ -54,8 +82,6 @@ export default function Home() {
 
                             <div className="d-flex flex-wrap align-items-center gap-3">
                                 
-
-                                {/* 💎 Upgrade Plan Button */}
                                 <button
                                     onClick={() => navigate('/upgrade-plan')}
                                     className="btn btn-warning text-dark fw-bold px-4 py-3 fs-6 rounded-3 shadow-sm d-flex align-items-center gap-2"
@@ -75,7 +101,6 @@ export default function Home() {
                                 </button>
                             </div>
 
-                            {/* Trust Stats Counter */}
                             <div className="row g-3 mt-4 pt-3 border-top border-secondary border-opacity-25">
                                 <div className="col-4">
                                     <h4 className="fw-bold text-info mb-0">98.4%</h4>
@@ -92,7 +117,6 @@ export default function Home() {
                             </div>
                         </div>
 
-                        {/* Right Hero Image (3D Interactive Tilt) */}
                         <div className="col-12 col-lg-6 text-center position-relative">
                             <div
                                 className="position-relative float-animation"
@@ -108,7 +132,6 @@ export default function Home() {
                                     style={{ maxHeight: '480px', objectFit: 'cover' }}
                                 />
 
-                                {/* Floating Badge Overlay */}
                                 <div className="position-absolute bottom-0 start-0 p-3 m-3 glass-card-hover rounded-3 text-start border border-info border-opacity-25 shadow-lg" style={{ maxWidth: '240px' }}>
                                     <div className="d-flex align-items-center gap-2 mb-1">
                                         <span className="fs-5">🎯</span>
@@ -123,13 +146,10 @@ export default function Home() {
                 </div>
             </section>
 
-
-            {/* ==================== 2. FEATURE 1 (LEFT IMAGE - RIGHT TEXT) ==================== */}
+            {/* ==================== 2. FEATURE 1 ==================== */}
             <section id="features-deepdive" className="py-5 border-top border-secondary border-opacity-10 bg-black bg-opacity-20">
                 <div className="container py-4">
                     <div className="row align-items-center g-5">
-
-                        {/* Left Image */}
                         <div className="col-12 col-lg-6">
                             <div className="glass-card-hover p-2 rounded-4 border border-secondary border-opacity-25 shadow-lg">
                                 <img
@@ -141,69 +161,59 @@ export default function Home() {
                             </div>
                         </div>
 
-                        {/* Right Text */}
                         <div className="col-12 col-lg-6 text-start">
                             <span className="text-info fw-bold small text-uppercase tracking-wider">01. Intelligent Scanning</span>
                             <h2 className="fw-bold display-6 mt-1 mb-3">
                                 Real AI ATS Score Inspector & Fixer.
                             </h2>
                             <p className="text-white-50 lead mb-4" style={{ fontSize: '1rem' }}>
-                                Standard resume builders only format text. CVPilot's Gemini AI evaluates your content against top Applicant Tracking Systems (ATS) like Greenhouse, Lever, and Workday.
+                                Standard resume builders only format text. CVPilot's Gemini AI evaluates your content against top Applicant Tracking Systems like Greenhouse, Lever, and Workday.
                             </p>
 
                             <ul className="list-unstyled text-white-50 d-flex flex-column gap-2.5">
                                 <li className="d-flex align-items-start gap-2">
                                     <span className="text-info fw-bold">✓</span>
-                                    <span><strong>Action Verb Scanner:</strong> Detects passive sentences and upgrades them to impactful metric statements.</span>
+                                    <span><strong>Action Verb Scanner:</strong> Detects passive sentences and upgrades them to impactful statements.</span>
                                 </li>
                                 <li className="d-flex align-items-start gap-2">
                                     <span className="text-info fw-bold">✓</span>
-                                    <span><strong>Missing Link & Section Alerts:</strong> Notifies you if critical links (LinkedIn, GitHub) or contact data are omitted.</span>
+                                    <span><strong>Missing Link & Section Alerts:</strong> Notifies if critical links or contacts are omitted.</span>
                                 </li>
                                 <li className="d-flex align-items-start gap-2">
                                     <span className="text-info fw-bold">✓</span>
-                                    <span><strong>0-100 Score Breakdown:</strong> Gives actionable tips to push your resume above the 85+ score threshold.</span>
+                                    <span><strong>0-100 Score Breakdown:</strong> Actionable tips to push above the 85+ score threshold.</span>
                                 </li>
                             </ul>
                         </div>
-
                     </div>
                 </div>
             </section>
 
-
-            {/* ==================== 3. FEATURE 2 (RIGHT IMAGE - LEFT TEXT) ==================== */}
+            {/* ==================== 3. FEATURE 2 ==================== */}
             <section className="py-5 border-top border-secondary border-opacity-10">
                 <div className="container py-4">
                     <div className="row align-items-center g-5 flex-column-reverse flex-lg-row">
-
-                        {/* Left Text */}
                         <div className="col-12 col-lg-6 text-start">
                             <span className="text-warning fw-bold small text-uppercase tracking-wider">02. Job Description Matcher</span>
                             <h2 className="fw-bold display-6 mt-1 mb-3">
                                 Paste Target JD. Auto-Tailor Keywords Instantly.
                             </h2>
                             <p className="text-white-50 lead mb-4" style={{ fontSize: '1rem' }}>
-                                Don't send the exact same resume to 50 different companies. CVPilot matches your candidate profile against any target Job Description (JD) text from LinkedIn or Indeed.
+                                Don't send the same resume everywhere. CVPilot matches your profile against target Job Description text in seconds.
                             </p>
 
                             <ul className="list-unstyled text-white-50 d-flex flex-column gap-2.5">
                                 <li className="d-flex align-items-start gap-2">
                                     <span className="text-warning fw-bold">✓</span>
-                                    <span><strong>Keyword Gap Analysis:</strong> Differentiates between matched skills and critical missing recruiter keywords.</span>
+                                    <span><strong>Keyword Gap Analysis:</strong> Highlights matched vs missing recruiter keywords.</span>
                                 </li>
                                 <li className="d-flex align-items-start gap-2">
                                     <span className="text-warning fw-bold">✓</span>
-                                    <span><strong>1-Click Tailored Summary:</strong> Re-generates a custom 3-line objective paragraph catered directly to that company.</span>
-                                </li>
-                                <li className="d-flex align-items-start gap-2">
-                                    <span className="text-warning fw-bold">✓</span>
-                                    <span><strong>Live Board Keyword Inserter:</strong> Auto-inject missing keywords directly into your skills store.</span>
+                                    <span><strong>1-Click Tailored Summary:</strong> Re-generates a custom objective tailored to that job.</span>
                                 </li>
                             </ul>
                         </div>
 
-                        {/* Right Image */}
                         <div className="col-12 col-lg-6">
                             <div className="glass-card-hover p-2 rounded-4 border border-secondary border-opacity-25 shadow-lg">
                                 <img
@@ -214,18 +224,14 @@ export default function Home() {
                                 />
                             </div>
                         </div>
-
                     </div>
                 </div>
             </section>
 
-
-            {/* ==================== 4. FEATURE 3 (LEFT IMAGE - RIGHT TEXT) ==================== */}
+            {/* ==================== 4. FEATURE 3 ==================== */}
             <section className="py-5 border-top border-secondary border-opacity-10 bg-black bg-opacity-20">
                 <div className="container py-4">
                     <div className="row align-items-center g-5">
-
-                        {/* Left Image */}
                         <div className="col-12 col-lg-6">
                             <div className="glass-card-hover p-2 rounded-4 border border-secondary border-opacity-25 shadow-lg">
                                 <img
@@ -237,34 +243,20 @@ export default function Home() {
                             </div>
                         </div>
 
-                        {/* Right Text */}
                         <div className="col-12 col-lg-6 text-start">
                             <span className="text-success fw-bold small text-uppercase tracking-wider">03. Full Application Suite</span>
                             <h2 className="fw-bold display-6 mt-1 mb-3">
                                 AI Cover Letters & Integrated Job Board.
                             </h2>
                             <p className="text-white-50 lead mb-4" style={{ fontSize: '1rem' }}>
-                                CVPilot accompanies you through the entire application cycle — from letter writing to searching live remote software openings.
+                                From writing personalized pitch letters to browsing live software roles, manage your full career journey in one place.
                             </p>
-
-                            <ul className="list-unstyled text-white-50 d-flex flex-column gap-2.5">
-                                <li className="d-flex align-items-start gap-2">
-                                    <span className="text-success fw-bold">✓</span>
-                                    <span><strong>AI Cover Letter Generator:</strong> Crafts persuasive 3-paragraph application letters personalized to target hiring managers.</span>
-                                </li>
-                                <li className="d-flex align-items-start gap-2">
-                                    <span className="text-success fw-bold">✓</span>
-                                    <span><strong>Live Job Feed Sync:</strong> Browse open software engineering, full stack, and DevOps positions right inside the resume builder.</span>
-                                </li>
-                            </ul>
                         </div>
-
                     </div>
                 </div>
             </section>
 
-
-            {/* ==================== 5. DETAILED COMPARISON MATRIX ==================== */}
+            {/* ==================== 5. COMPARISON MATRIX ==================== */}
             <section className="py-5 border-top border-secondary border-opacity-10">
                 <div className="container py-4">
                     <div className="text-center mb-5">
@@ -272,7 +264,6 @@ export default function Home() {
                             Why Choose Us
                         </span>
                         <h2 className="fw-bold display-5">How CVPilot Outperforms Others</h2>
-                        <p className="text-white-50 max-w-2xl mx-auto">Compare CVPilot against standard online resume generators and Canva templates.</p>
                     </div>
 
                     <div className="table-responsive rounded-4 border border-secondary border-opacity-25 glass-card-hover">
@@ -280,39 +271,25 @@ export default function Home() {
                             <thead>
                                 <tr className="border-bottom border-secondary">
                                     <th className="p-3 fs-6">Feature Capability</th>
-                                    <th className="p-3 fs-6 text-center text-info comparison-table-header" style={{ width: '30%' }}>
-                                        🚀 CVPilot AI
-                                    </th>
-                                    <th className="p-3 fs-6 text-center text-white-50" style={{ width: '30%' }}>
-                                        Traditional Resume Builders (Canva/Zety)
-                                    </th>
+                                    <th className="p-3 fs-6 text-center text-info" style={{ width: '30%' }}>🚀 CVPilot AI</th>
+                                    <th className="p-3 fs-6 text-center text-white-50" style={{ width: '30%' }}>Standard Builders</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
                                     <td className="p-3 fw-semibold">ATS Scanner & Keyword Auditor</td>
-                                    <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ Full Gemini AI Audit</td>
+                                    <td className="p-3 text-center text-success fw-bold">✅ Full Gemini AI Audit</td>
                                     <td className="p-3 text-center text-danger">❌ Basic / Missing</td>
                                 </tr>
                                 <tr>
                                     <td className="p-3 fw-semibold">Target Job Description Matching</td>
-                                    <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ 1-Click JD Sync & Gap Analysis</td>
+                                    <td className="p-3 text-center text-success fw-bold">✅ 1-Click JD Sync</td>
                                     <td className="p-3 text-center text-danger">❌ Manual Copying</td>
                                 </tr>
                                 <tr>
-                                    <td className="p-3 fw-semibold">Built-in AI Cover Letter Writer</td>
-                                    <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ Included with Letterhead PDF</td>
-                                    <td className="p-3 text-center text-danger">❌ Separate Paid Add-on</td>
-                                </tr>
-                                <tr>
-                                    <td className="p-3 fw-semibold">Live Job Board & Keyword Inserter</td>
-                                    <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ Live Integrated Feed</td>
-                                    <td className="p-3 text-center text-danger">❌ Not Available</td>
-                                </tr>
-                                <tr>
-                                    <td className="p-3 fw-semibold">PDF Export & Cloud Profiles</td>
-                                    <td className="p-3 text-center text-success fw-bold comparison-table-header">✅ Clean Formatted Export</td>
-                                    <td className="p-3 text-center text-warning">⚠️ Paywall per Single Export</td>
+                                    <td className="p-3 fw-semibold">AI Cover Letter with Letterhead PDF</td>
+                                    <td className="p-3 text-center text-success fw-bold">✅ Included</td>
+                                    <td className="p-3 text-center text-danger">❌ Paid Add-on</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -320,16 +297,100 @@ export default function Home() {
                 </div>
             </section>
 
+            {/* ==================== 🚀 6. GET IN TOUCH WITH US SECTION ==================== */}
+            <section id="contact-us" className="py-5 border-top border-secondary border-opacity-10 position-relative">
+                <div className="container py-4" style={{ maxWidth: '850px' }}>
+                    <div className="text-center mb-4">
+                        <span className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-1 rounded-pill small fw-bold mb-2">
+                            Direct Support & Suggestions
+                        </span>
+                        <h2 className="fw-bold display-6">Get in touch with us</h2>
+                        <p className="text-white-50 small">
+                            Have a feature request, feedback, or need account assistance? Drop us a direct message and our admin team will reply to your email.
+                        </p>
+                    </div>
 
-            {/* ==================== 6. CALL TO ACTION (CTA) ==================== */}
+                    <div className="p-4 p-md-5 rounded-4 border border-secondary border-opacity-25 shadow-lg bg-dark bg-opacity-50">
+                        <form onSubmit={handleContactSubmit}>
+                            <div className="row g-3 mb-3">
+                                <div className="col-12 col-md-6 text-start">
+                                    <label className="form-label text-white-50 extra-small fw-bold text-uppercase">Your Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={contactForm.name}
+                                        onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                                        placeholder="e.g. Alex Johnson"
+                                        className="form-control glass-input text-white small"
+                                    />
+                                </div>
+                                <div className="col-12 col-md-6 text-start">
+                                    <label className="form-label text-white-50 extra-small fw-bold text-uppercase">Your Email</label>
+                                    <input
+                                        type="email"
+                                        required
+                                        value={contactForm.email}
+                                        onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                                        placeholder="alex@example.com"
+                                        className="form-control glass-input text-white small"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mb-3 text-start">
+                                <label className="form-label text-white-50 extra-small fw-bold text-uppercase">Topic / Subject</label>
+                                <select
+                                    value={contactForm.subjectType}
+                                    onChange={(e) => setContactForm({ ...contactForm, subjectType: e.target.value })}
+                                    className="form-select glass-input text-white small bg-dark border-secondary"
+                                >
+                                    <option value="GENERAL">General Feedback / Inquiry</option>
+                                    <option value="FEATURE_SUGGESTION">Feature Request / Suggestion</option>
+                                    <option value="BUG_REPORT">Bug or Error Report</option>
+                                    <option value="BILLING">Billing / Plan Inquiry</option>
+                                    <option value="OTHER">Other Query</option>
+                                </select>
+                            </div>
+
+                            <div className="mb-4 text-start">
+                                <label className="form-label text-white-50 extra-small fw-bold text-uppercase">Your Message</label>
+                                <textarea
+                                    rows={4}
+                                    required
+                                    value={contactForm.message}
+                                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                                    placeholder="Write your suggestions, issue details, or feedback here..."
+                                    className="form-control glass-input text-white small"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={contactLoading}
+                                className="btn btn-info text-dark fw-bold w-100 py-2.5 rounded-3 shadow"
+                            >
+                                {contactLoading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2"></span>
+                                        Sending to Admin...
+                                    </>
+                                ) : (
+                                    "✉️ Send Message to Team"
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            {/* ==================== 7. CALL TO ACTION (CTA) ==================== */}
             <section className="py-5 border-top border-secondary border-opacity-10 position-relative">
                 <div className="container py-5 text-center">
                     <div className="p-5 rounded-5 glass-card-hover border border-info border-opacity-25 shadow-lg position-relative overflow-hidden">
-
                         <div className="position-relative z-1">
                             <h2 className="display-5 fw-bold mb-3">Ready to Land Your Dream Tech Role?</h2>
                             <p className="text-white-50 lead max-w-xl mx-auto mb-4" style={{ fontSize: '1.05rem' }}>
-                                Join thousands of engineers, product managers, and developers who passed ATS filters and got hired.
+                                Join thousands of developers who passed ATS filters and got hired.
                             </p>
 
                             <div className="d-flex flex-wrap justify-content-center align-items-center gap-3">
@@ -348,18 +409,14 @@ export default function Home() {
                                 </button>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </section>
 
-
-            {/* ==================== 7. FOOTER SECTION ==================== */}
+            {/* ==================== 8. FOOTER SECTION ==================== */}
             <footer className="border-top border-secondary border-opacity-20 pt-5 pb-4 bg-black bg-opacity-40">
                 <div className="container">
                     <div className="row g-4 justify-content-between text-start mb-5">
-
-                        {/* Brand Column */}
                         <div className="col-12 col-lg-4">
                             <div className="d-flex align-items-center gap-2 mb-3 cursor-pointer" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
                                 <span className="p-1.5 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-25 text-info fw-bold">⚡</span>
@@ -370,46 +427,32 @@ export default function Home() {
                             <p className="text-white-50 small mb-3" style={{ lineHeight: '1.7', maxWidth: '320px' }}>
                                 The intelligent ATS-proof resume builder designed for developers, designers, and tech leaders. Built-in Gemini AI scoring, JD matcher, and tailored application generation.
                             </p>
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="badge bg-dark border border-secondary border-opacity-30 text-white-50 py-1.5 px-2.5 rounded-pill font-monospace" style={{ fontSize: '0.7rem' }}>
-                                    v1.0 Production
-                                </span>
-                                <span className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-20 extra-small" style={{ fontSize: '0.7rem' }}>
-                                    <span className="spinner-grow spinner-grow-sm text-success" style={{ width: '6px', height: '6px' }}></span>
-                                    System Active
-                                </span>
-                            </div>
+                            <span className="badge bg-dark border border-secondary border-opacity-30 text-white-50 py-1.5 px-2.5 rounded-pill font-monospace" style={{ fontSize: '0.7rem' }}>
+                                v1.0 Production
+                            </span>
                         </div>
 
-                        {/* Quick Navigation Links */}
                         <div className="col-6 col-md-3 col-lg-2">
                             <h6 className="fw-bold text-white mb-3 text-uppercase extra-small tracking-wider">Workspace</h6>
                             <ul className="list-unstyled d-flex flex-column gap-2 small text-white-50">
-                                <li><span onClick={() => navigate('/select-template')} className="cursor-pointer hover-text-info" style={{ cursor: 'pointer' }}>Choose Templates</span></li>
-                                <li><span onClick={() => navigate('/build-resume')} className="cursor-pointer hover-text-info" style={{ cursor: 'pointer' }}>Resume Builder</span></li>
-                                <li><span onClick={() => navigate('/profile')} className="cursor-pointer hover-text-info" style={{ cursor: 'pointer' }}>Profile & Socials</span></li>
+                                <li><span onClick={() => navigate('/select-template')} className="cursor-pointer" style={{ cursor: 'pointer' }}>Choose Templates</span></li>
+                                <li><span onClick={() => navigate('/build-resume')} className="cursor-pointer" style={{ cursor: 'pointer' }}>Resume Builder</span></li>
+                                <li><span onClick={() => navigate('/profile')} className="cursor-pointer" style={{ cursor: 'pointer' }}>Profile & Socials</span></li>
                                 <li><span onClick={() => navigate('/upgrade-plan')} className="cursor-pointer text-warning fw-bold" style={{ cursor: 'pointer' }}>Upgrade to Pro 👑</span></li>
                             </ul>
                         </div>
 
-                        {/* AI & Features Links */}
                         <div className="col-6 col-md-3 col-lg-3">
-                            <h6 className="fw-bold text-white mb-3 text-uppercase extra-small tracking-wider">Capabilities</h6>
+                            <h6 className="fw-bold text-white mb-3 text-uppercase extra-small tracking-wider">Support</h6>
                             <ul className="list-unstyled d-flex flex-column gap-2 small text-white-50">
+                                <li><a href="#contact-us" className="text-white-50 text-decoration-none">Get in touch with us</a></li>
                                 <li><span className="text-white-50">Gemini ATS Inspector</span></li>
                                 <li><span className="text-white-50">Job Description Matcher</span></li>
-                                <li><span className="text-white-50">AI Cover Letter Generator</span></li>
-                                <li><span className="text-white-50">Multi-Format PDF Exporter</span></li>
-                                <li><span className="text-white-50">Hardware IP Threat Logging</span></li>
                             </ul>
                         </div>
 
-                        {/* Security & Payment Standards */}
                         <div className="col-12 col-md-6 col-lg-3">
                             <h6 className="fw-bold text-white mb-3 text-uppercase extra-small tracking-wider">Secure Infrastructure</h6>
-                            <p className="text-white-50 extra-small mb-3" style={{ lineHeight: '1.6' }}>
-                                Payments and user sessions are encrypted end-to-end via 256-Bit SSL and Razorpay compliance.
-                            </p>
                             <div className="p-3 rounded-3 border border-secondary border-opacity-25 bg-dark bg-opacity-50">
                                 <div className="d-flex align-items-center gap-2 mb-1.5">
                                     <span className="text-success fw-bold">🔒</span>
@@ -420,24 +463,18 @@ export default function Home() {
                                 </span>
                             </div>
                         </div>
-
                     </div>
 
-                    {/* Bottom Sub-footer */}
                     <div className="border-top border-secondary border-opacity-15 pt-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 text-white-50 extra-small" style={{ fontSize: '0.78rem' }}>
-                        <span>© 2026 CVPilot Inc. All rights reserved. Designed for High-Impact Careers.</span>
+                        <span>© 2026 CVPilot Inc. All rights reserved.</span>
                         <div className="d-flex gap-3">
-                            <span className="cursor-pointer hover-text-white" onClick={() => navigate('/upgrade-plan')} style={{ cursor: 'pointer' }}>Pricing & Plans</span>
+                            <span className="cursor-pointer" onClick={() => navigate('/upgrade-plan')} style={{ cursor: 'pointer' }}>Pricing & Plans</span>
                             <span>•</span>
-                            <span className="cursor-pointer hover-text-white" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>Account Dashboard</span>
-                            <span>•</span>
-                            <span className="text-white-50">Terms & Privacy</span>
+                            <span className="cursor-pointer" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>Account Dashboard</span>
                         </div>
                     </div>
-
                 </div>
             </footer>
-
         </div>
     );
 }
