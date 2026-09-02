@@ -1,52 +1,43 @@
 // client/src/pages/NotFound.jsx
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { reportSuspiciousRouteApi } from '../services/adminService';
 
 export default function NotFound() {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        const reportAccess = async () => {
+            try {
+                const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                await reportSuspiciousRouteApi({
+                    attemptedRoute: location.pathname,
+                    userId: storedUser._id || null,
+                    username: storedUser.username || 'Anonymous Guest',
+                    email: storedUser.email || 'Unauthenticated'
+                });
+            } catch (err) {
+                // Silently pass
+            }
+        };
+
+        reportAccess();
+    }, [location.pathname]);
 
     return (
-        <div className="min-vh-100 d-flex align-items-center justify-content-center text-center p-4 position-relative overflow-hidden" style={{ backgroundColor: '#070a12' }}>
-
-            {/* Ambient Background Glow Effect */}
-            <div className="glow-bg" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}></div>
-
-            <div className="glass-card-hover p-4 p-md-5 rounded-4 border border-secondary border-opacity-25 shadow-lg position-relative z-1" style={{ maxWidth: '550px', width: '100%' }}>
-
-                {/* 404 Large Glitch-style Badge */}
-                <div className="mb-3">
-                    <span className="display-1 fw-extrabold gradient-text-main d-block font-monospace" style={{ fontSize: '6rem', letterSpacing: '2px' }}>
-                        404
-                    </span>
-                    <span className="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50 px-3 py-1.5 rounded-pill small fw-bold">
-                        ⚠️ Page Not Found
-                    </span>
-                </div>
-
-                <h3 className="fw-bold text-white mb-2">Lost in the Cloud Space?</h3>
-                <p className="text-white-50 small mb-4" style={{ lineHeight: '1.6' }}>
-                    The URL path you are trying to access doesn't exist or might have been moved to a new route. Don't worry, your resume data is safe!
+        <div className="min-vh-100 d-flex align-items-center justify-content-center text-center p-4" style={{ backgroundColor: '#070a12' }}>
+            <div className="p-5 rounded-4 border border-danger border-opacity-30 shadow-lg text-white" style={{ maxWidth: '520px', background: 'rgba(15, 23, 42, 0.9)' }}>
+                <span className="badge bg-danger bg-opacity-25 text-danger border border-danger mb-3 px-3 py-1 font-monospace">
+                    SECURITY NOTICE: 404
+                </span>
+                <h2 className="fw-bold mb-2">Unrecognized Route Path</h2>
+                <p className="text-white-50 small mb-4">
+                    The path <code className="text-danger bg-black px-2 py-1 rounded">{location.pathname}</code> does not exist on CVPilot. This attempt has been logged for security.
                 </p>
-
-                {/* Navigation CTA Buttons */}
-                <div className="d-flex flex-wrap justify-content-center gap-3">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="btn btn-info text-dark fw-bold btn-sm py-2 px-4 shadow-sm"
-                        style={{ borderRadius: '8px' }}
-                    >
-                        🏠 Return to Home
-                    </button>
-
-                    <button
-                        onClick={() => navigate('/select-template')}
-                        className="btn btn-outline-light btn-sm py-2 px-4"
-                        style={{ borderRadius: '8px' }}
-                    >
-                        📄 Resume Builder
-                    </button>
-                </div>
-
+                <button onClick={() => navigate('/')} className="btn btn-info text-dark fw-bold btn-sm px-4">
+                    Return to Platform Home
+                </button>
             </div>
         </div>
     );

@@ -288,40 +288,85 @@ Return ONLY a valid JSON object without markdown wrappers or code blocks, using 
     }
 };
 
-// 6. AI COVER LETTER GENERATOR
+// 6. AI COVER LETTER GENERATOR (Enterprise Upgrade)
 const generateCoverLetter = async (req, res) => {
     try {
         const { resumeData, jobTitle, companyName, jobDescription } = req.body;
 
         if (!resumeData || !resumeData.personalInfo) {
-            return res.status(400).json({ success: false, message: "Resume data is required." });
+            return res.status(400).json({ 
+                success: false, 
+                message: "Resume data with personalInfo is required." 
+            });
         }
 
         const candidateName = resumeData.personalInfo.fullName || "Applicant";
-        const skills = Array.isArray(resumeData.skills)
+        const targetRole = jobTitle?.trim() || "Software Engineer";
+        const targetCompany = companyName?.trim() || "your organization";
+
+        // 1. Parse Key Technical Skills
+        const skillsList = Array.isArray(resumeData.skills)
             ? resumeData.skills.join(', ')
-            : (resumeData.skills?.skillsList?.join(', ') || 'software development');
+            : (resumeData.skills?.skillsList?.join(', ') || 'Software Architecture, Problem Solving');
 
-        const prompt = `You are a professional executive career coach and cover letter writer.
-Write a compelling, professional 3-paragraph cover letter for ${candidateName} applying for the position of "${jobTitle || 'Target Role'}" at "${companyName || 'Target Company'}".
+        // 2. Extract Top Work Experience Details (Company, Role, & Accomplishments)
+        const experienceHighlights = (resumeData.experience || [])
+            .slice(0, 3)
+            .map((exp, idx) => {
+                const responsibilities = Array.isArray(exp.responsibilities) 
+                    ? exp.responsibilities.slice(0, 2).join('; ')
+                    : String(exp.responsibilities || '').slice(0, 160);
+                return `${idx + 1}. ${exp.role || 'Developer'} at ${exp.company || 'Tech Firm'}: ${responsibilities}`;
+            })
+            .join('\n');
 
-Candidate Details:
-- Key Skills: ${skills}
-- Summary: ${resumeData.summary || 'Experienced professional with relevant skills'}
-- Recent Experience: ${JSON.stringify(resumeData.experience || []).slice(0, 500)}
+        // 3. Extract Core Project Highlights
+        const projectHighlights = (resumeData.projects || [])
+            .slice(0, 2)
+            .map(proj => {
+                const stack = Array.isArray(proj.techStack) ? ` [Stack: ${proj.techStack.join(', ')}]` : '';
+                return `• ${proj.name}${stack}: ${proj.description || ''}`;
+            })
+            .join('\n');
 
-Job Description Context:
-${jobDescription || 'Standard requirements for ' + jobTitle}
+        // 4. Structured Hiring-Manager Grade Prompt
+        const prompt = `You are an elite executive talent strategist and career coach.
+Write a targeted, high-converting professional cover letter for ${candidateName} applying for the position of "${targetRole}" at "${targetCompany}".
 
-Guidelines:
-- Keep the tone professional, persuasive, and confident.
-- Paragraph 1: Strong opening hook expressing excitement for the specific role at the company.
-- Paragraph 2: Highlight core achievements and technical skills matching the role.
-- Paragraph 3: Professional closing call-to-action requesting an interview.
-- Output ONLY the clean cover letter text content (including subject line, salutation, body paragraphs, and sign-off). Do NOT use markdown code wrappers.`;
+CANDIDATE BACKGROUND:
+- Professional Title: ${resumeData.personalInfo.title || targetRole}
+- Core Skills: ${skillsList}
+- Professional Summary: ${resumeData.summary || 'Demonstrated technical execution and engineering acumen.'}
+- Career Highlights:
+${experienceHighlights || 'Proven hands-on track record in end-to-end software development lifecycle.'}
+- Key Projects:
+${projectHighlights || 'Engineered responsive web applications and scalable APIs.'}
+
+TARGET JOB CONTEXT:
+${jobDescription ? jobDescription.trim() : `Standard industry expectations and core deliverables for a high-impact ${targetRole}.`}
+
+STRICT FORMATTING AND ARCHITECTURE RULES:
+1. DO NOT invent contact headers, applicant phone numbers, email IDs, dates, or recipient street addresses. (The client's PDF letterhead generator automatically handles these metadata blocks).
+2. Start directly with the formal salutation:
+   "Dear Hiring Team at ${targetCompany},"
+3. Paragraph 1 (The Hook): A confident, high-energy opening stating the target position, expressing informed enthusiasm for ${targetCompany}, and establishing an immediate value proposition.
+4. Paragraph 2 (Core Impact & Technical Fit): Connect candidate's actual projects/experience (using real skills: ${skillsList}) directly to the needs of the target role. Highlight measurable results and system design capabilities.
+5. Paragraph 3 (Collaborative Culture & Execution): Demonstrate how the candidate's work ethic, adaptability, and problem-solving mindset will accelerate team velocity.
+6. Final Closing: A proactive call-to-action requesting an interview, followed immediately by formal sign-off:
+   "Sincerely,\n${candidateName}"
+7. TONE: Assertive, articulate, corporate-ready, and polished. Zero conversational fluff, zero generic buzzword stuffing.
+8. Output ONLY the raw letter text. DO NOT enclose the response in markdown code wrappers or backticks.`;
 
         const aiText = await callGeminiAPI(prompt);
-        const cleanCoverLetter = aiText.replace(/```/g, '').trim();
+
+        // Sanitize output
+        let cleanCoverLetter = aiText
+            .replace(/```[a-z]*\n?/gi, '')
+            .replace(/```/g, '')
+            .trim();
+
+        // Strip conversational AI preambles if any exist
+        cleanCoverLetter = cleanCoverLetter.replace(/^(here is|certainly|sure thing).*?\n\n/i, '').trim();
 
         return res.status(200).json({
             success: true,
@@ -332,7 +377,7 @@ Guidelines:
         console.error("Cover Letter AI Error:", error.message || error);
         return res.status(500).json({
             success: false,
-            message: "Failed to generate Cover Letter: " + error.message
+            message: "Failed to generate Cover Letter: " + (error.message || "Internal server error")
         });
     }
 };

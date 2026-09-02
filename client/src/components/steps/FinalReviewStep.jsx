@@ -6,6 +6,7 @@ import { useResumeStore } from '../../store/useResumeStore';
 import { generateResumePDF } from '../../utils/pdfGenerator';
 import Toast from '../Toast';
 import JobBoardModal from '../JobBoardModal';
+import { generateCoverLetterPDF } from '../../utils/coverLetterPDF';
 
 export default function FinalReviewStep() {
     const navigate = useNavigate();
@@ -25,7 +26,11 @@ export default function FinalReviewStep() {
     const [showJdModal, setShowJdModal] = useState(false);
 
     // Cover Letter States
-    const [coverLetterInput, setCoverLetterInput] = useState({ jobTitle: '', companyName: '', jobDescription: '' });
+    const [coverLetterInput, setCoverLetterInput] = useState({
+        jobTitle: '',
+        companyName: '',
+        jobDescription: ''
+    });
     const [coverLetterText, setCoverLetterText] = useState('');
     const [coverLoading, setCoverLoading] = useState(false);
     const [showCoverModal, setShowCoverModal] = useState(false);
@@ -35,7 +40,7 @@ export default function FinalReviewStep() {
 
     const showToast = (message, type = 'success') => setToast({ message, type });
 
-    // PDF Download Handler
+    // Resume PDF Download Handler
     const handleDownloadPDF = () => {
         try {
             generateResumePDF(resumeData, resumeTitle || 'Resume', selectedTemplate || 'template-ats');
@@ -43,6 +48,24 @@ export default function FinalReviewStep() {
         } catch (error) {
             console.error("PDF Error:", error);
             showToast("Failed to generate PDF.", "danger");
+        }
+    };
+
+    // 🚀 Professional Cover Letter Download Handler (With Full Metadata)
+    const handleDownloadCoverLetterPDF = () => {
+        try {
+            generateCoverLetterPDF(
+                coverLetterText,
+                resumeData?.personalInfo || {},
+                {
+                    companyName: coverLetterInput.companyName,
+                    jobTitle: coverLetterInput.jobTitle
+                }
+            );
+            showToast("Professional Cover Letter PDF generated! 📄", "success");
+        } catch (error) {
+            console.error("Cover Letter PDF Error:", error);
+            showToast(error.message || "Failed to generate Cover Letter PDF.", "danger");
         }
     };
 
@@ -134,8 +157,13 @@ export default function FinalReviewStep() {
         }
     };
 
-    // Cover Letter Handler
+    // 🚀 High-Impact AI Cover Letter Generator Handler
     const handleGenerateCoverLetter = async () => {
+        if (!coverLetterInput.jobTitle.trim()) {
+            showToast("Target Job Title is required.", "danger");
+            return;
+        }
+
         setCoverLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -150,7 +178,7 @@ export default function FinalReviewStep() {
 
             if (res.data.success) {
                 setCoverLetterText(res.data.coverLetter);
-                showToast("Cover Letter generated successfully!", "success");
+                showToast("Cover Letter tailored & generated!", "success");
             }
         } catch (error) {
             showToast("Failed to generate Cover Letter.", "danger");
@@ -159,7 +187,6 @@ export default function FinalReviewStep() {
         }
     };
 
-    // Copy Cover Letter Text
     const handleCopyCoverLetter = () => {
         navigator.clipboard.writeText(coverLetterText);
         showToast("Cover Letter copied to clipboard! 📋", "success");
@@ -183,115 +210,149 @@ export default function FinalReviewStep() {
             <div className="glass-card p-3 p-md-4 text-white border-0 shadow-lg mb-4">
                 <div className="d-flex flex-column gap-3">
 
-                    <div className="d-flex flex-wrap align-items-center justify-content-start gap-2 border-bottom border-secondary border-opacity-25 pb-3">
+                    {/* CONTROL & ACTION MATRIX */}
+                    <div className="border-bottom border-secondary border-opacity-25 pb-3">
 
-                        {/* Resume Title Input */}
-                        <div className="d-flex align-items-center gap-1.5">
-                            <span className="small text-white-50 fw-medium">Title:</span>
-                            <input
-                                type="text"
-                                value={resumeTitle}
-                                onChange={(e) => setResumeTitle(e.target.value)}
-                                className="form-control form-control-sm glass-input text-white py-1"
-                                placeholder="e.g. React Developer CV"
-                                style={{ width: '160px', fontSize: '0.8rem' }}
-                            />
+                        {/* 1. DOCUMENT CONFIGURATION ROW */}
+                        <div className="row g-2 align-items-center mb-3">
+                            <div className="col-12 col-sm-6 col-md-5 col-lg-4">
+                                <div className="input-group input-group-sm">
+                                    <span className="input-group-text bg-dark text-white-50 border-secondary">
+                                        📄 Title
+                                    </span>
+                                    <input
+                                        type="text"
+                                        value={resumeTitle}
+                                        onChange={(e) => setResumeTitle(e.target.value)}
+                                        className="form-control glass-input text-white"
+                                        placeholder="e.g. FullStack CV"
+                                        style={{ fontSize: '0.82rem' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="col-12 col-sm-6 col-md-4 col-lg-3">
+                                <select
+                                    value={selectedTemplate || 'template-ats'}
+                                    onChange={(e) => setTemplate(e.target.value)}
+                                    className="form-select form-select-sm bg-dark text-white border-secondary"
+                                    style={{ fontSize: '0.82rem', height: '31px' }}
+                                >
+                                    <option value="template-ats">Standard ATS Layout</option>
+                                    <option value="template-sidebar">Modern Sidebar Layout</option>
+                                    <option value="template-corporate">Clean Corporate Layout</option>
+                                    <option value="template-header-banner">Executive Banner Layout</option>
+                                    <option value="template-classic-table">Classic Academic Layout</option>
+                                </select>
+                            </div>
+
+                            <div className="col-12 col-sm-12 col-md-3 col-lg-auto ms-lg-auto d-flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setStep(1)}
+                                    className="btn btn-outline-light btn-sm py-1.5 w-100 fw-medium"
+                                    style={{ borderRadius: '8px', fontSize: '0.8rem', minWidth: '90px' }}
+                                >
+                                    ✏️ Edit Details
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleCreateNewResume}
+                                    className="btn btn-outline-danger btn-sm py-1.5 w-100 fw-medium"
+                                    style={{ borderRadius: '8px', fontSize: '0.8rem', minWidth: '95px' }}
+                                >
+                                    ➕ New Blank
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Template Switcher */}
-                        <select
-                            value={selectedTemplate || 'template-ats'}
-                            onChange={(e) => setTemplate(e.target.value)}
-                            className="form-select form-select-sm bg-dark text-white border-secondary py-1.5"
-                            style={{ fontSize: '0.8rem', width: '145px', borderRadius: '8px' }}
-                        >
-                            <option value="template-ats">Standard ATS</option>
-                            <option value="template-sidebar">Modern Sidebar</option>
-                            <option value="template-corporate">Clean Corporate</option>
-                            <option value="template-header-banner">Executive Banner</option>
-                            <option value="template-classic-table">Classic Academic</option>
-                        </select>
+                        {/* 2. AI SUITE (Responsive Grid) */}
+                        <div className="row g-2 mb-3">
+                            <div className="col-12 col-sm-6 col-md-3">
+                                <button
+                                    type="button"
+                                    onClick={handleAnalyzeAts}
+                                    className="btn btn-warning text-dark btn-sm py-2 w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-1.5"
+                                    style={{ borderRadius: '8px', fontSize: '0.8rem' }}
+                                >
+                                    <span>🚀</span>
+                                    <span>Analyze ATS Score</span>
+                                </button>
+                            </div>
 
-                        {/* Edit Button */}
-                        <button
-                            type="button"
-                            onClick={() => setStep(1)}
-                            className="btn btn-outline-light btn-sm py-1.5 px-3 fw-medium"
-                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                        >
-                            ✏️ Edit
-                        </button>
+                            <div className="col-12 col-sm-6 col-md-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowJdModal(true)}
+                                    className="btn btn-primary btn-sm py-2 w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-1.5"
+                                    style={{ borderRadius: '8px', fontSize: '0.8rem' }}
+                                >
+                                    <span>🎯</span>
+                                    <span>Match Target JD</span>
+                                </button>
+                            </div>
 
-                        {/* Save Action */}
-                        <button
-                            type="button"
-                            disabled={dbLoading}
-                            onClick={handleSaveToProfile}
-                            className="btn btn-info text-dark btn-sm py-1.5 px-3 fw-semibold"
-                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                        >
-                            {dbLoading ? 'Saving...' : '☁️ Save to Profile'}
-                        </button>
+                            <div className="col-12 col-sm-6 col-md-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCoverModal(true)}
+                                    className="btn btn-outline-info btn-sm py-2 w-100 fw-bold d-flex align-items-center justify-content-center gap-1.5"
+                                    style={{ borderRadius: '8px', fontSize: '0.8rem' }}
+                                >
+                                    <span>✉️</span>
+                                    <span>AI Cover Letter</span>
+                                </button>
+                            </div>
 
-                        {/* ANALYZE ATS BUTTON */}
-                        <button
-                            type="button"
-                            onClick={handleAnalyzeAts}
-                            className="btn btn-warning text-dark btn-sm py-1.5 px-3 fw-bold"
-                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                        >
-                            🚀 Analyze ATS
-                        </button>
+                            <div className="col-12 col-sm-6 col-md-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowJobBoard(true)}
+                                    className="btn btn-outline-warning btn-sm py-2 w-100 fw-bold d-flex align-items-center justify-content-center gap-1.5"
+                                    style={{ borderRadius: '8px', fontSize: '0.8rem' }}
+                                >
+                                    <span>💼</span>
+                                    <span>Live Job Matching</span>
+                                </button>
+                            </div>
+                        </div>
 
-                        {/* MATCH TARGET JD BUTTON */}
-                        <button
-                            type="button"
-                            onClick={() => setShowJdModal(true)}
-                            className="btn btn-primary btn-sm py-1.5 px-3 fw-bold"
-                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                        >
-                            🎯 Match Target JD
-                        </button>
+                        {/* 3. PRIMARY ACTIONS */}
+                        <div className="row g-2 pt-2 border-top border-secondary border-opacity-10">
+                            <div className="col-12 col-sm-6 ms-sm-auto col-md-4 col-lg-3">
+                                <button
+                                    type="button"
+                                    disabled={dbLoading}
+                                    onClick={handleSaveToProfile}
+                                    className="btn btn-info text-dark btn-sm py-2 w-100 fw-semibold d-flex align-items-center justify-content-center gap-1"
+                                    style={{ borderRadius: '8px', fontSize: '0.82rem' }}
+                                >
+                                    {dbLoading ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-1"></span>
+                                            <span>Saving...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>☁️</span>
+                                            <span>Save to Profile</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
 
-                        {/* AI COVER LETTER BUTTON */}
-                        <button
-                            type="button"
-                            onClick={() => setShowCoverModal(true)}
-                            className="btn btn-outline-info btn-sm py-1.5 px-3 fw-bold"
-                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                        >
-                            ✉️ AI Cover Letter
-                        </button>
-
-                        {/* LIVE JOBS BUTTON */}
-                        <button
-                            type="button"
-                            onClick={() => setShowJobBoard(true)}
-                            className="btn btn-outline-warning btn-sm py-1.5 px-3 fw-bold"
-                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                        >
-                            💼 Live Jobs & Keywords
-                        </button>
-
-                        {/* New Resume Action */}
-                        <button
-                            type="button"
-                            onClick={handleCreateNewResume}
-                            className="btn btn-success btn-sm py-1.5 px-3 fw-semibold"
-                            style={{ borderRadius: '8px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                        >
-                            ➕ New Resume
-                        </button>
-
-                        {/* Download PDF Button */}
-                        <button
-                            type="button"
-                            onClick={handleDownloadPDF}
-                            className="btn btn-premium btn-sm py-1.5 px-3 fw-semibold"
-                            style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                        >
-                            📥 Download PDF
-                        </button>
+                            <div className="col-12 col-sm-6 col-md-4 col-lg-3">
+                                <button
+                                    type="button"
+                                    onClick={handleDownloadPDF}
+                                    className="btn btn-premium btn-sm py-2 w-100 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-1"
+                                    style={{ borderRadius: '8px', fontSize: '0.82rem' }}
+                                >
+                                    <span>📥</span>
+                                    <span>Download Ready PDF</span>
+                                </button>
+                            </div>
+                        </div>
 
                     </div>
 
@@ -307,7 +368,7 @@ export default function FinalReviewStep() {
                 </div>
             </div>
 
-            {/* LIVE JOBS MODAL (Placed outside button group layout) */}
+            {/* LIVE JOBS MODAL */}
             <JobBoardModal
                 isOpen={showJobBoard}
                 onClose={() => setShowJobBoard(false)}
@@ -316,7 +377,7 @@ export default function FinalReviewStep() {
 
             {/* ATS SCORE MODAL */}
             {showAtsModal && (
-                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)' }}>
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content bg-dark text-white border border-secondary shadow-lg rounded-4">
                             <div className="modal-header border-secondary pb-2">
@@ -361,14 +422,34 @@ export default function FinalReviewStep() {
                                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowJdModal(false)}></button>
                             </div>
                             <div className="modal-body p-4 text-start">
-                                <textarea rows={4} value={jdText} onChange={(e) => setJdText(e.target.value)} className="form-control glass-input text-white small mb-3" placeholder="Paste full JD here..." />
-                                <button onClick={handleMatchJd} disabled={jdLoading || !jdText.trim()} className="btn btn-primary fw-bold btn-sm w-100 mb-3">
+                                <textarea
+                                    rows={4}
+                                    value={jdText}
+                                    onChange={(e) => setJdText(e.target.value)}
+                                    className="form-control glass-input text-white small mb-3"
+                                    placeholder="Paste full JD here..."
+                                />
+                                <button
+                                    onClick={handleMatchJd}
+                                    disabled={jdLoading || !jdText.trim()}
+                                    className="btn btn-primary fw-bold btn-sm w-100 mb-3"
+                                >
                                     {jdLoading ? "Analyzing Match..." : "⚡ Compare Resume with JD"}
                                 </button>
                                 {jdResult && (
                                     <div className="p-3 border border-secondary border-opacity-25 rounded-3 bg-secondary bg-opacity-10">
-                                        <div className="d-flex justify-content-between align-items-center mb-2"><span className="fw-bold">Target Alignment:</span><span className="fs-5 fw-bold text-info">{jdResult.matchPercentage}% Match</span></div>
-                                        <div className="mb-2"><h6 className="fw-bold text-warning small mb-1">Missing Keywords:</h6>{jdResult.missingKeywords?.map((kw, i) => <span key={i} className="badge bg-danger bg-opacity-25 text-danger border border-danger me-1">{kw}</span>)}</div>
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <span className="fw-bold">Target Alignment:</span>
+                                            <span className="fs-5 fw-bold text-info">{jdResult.matchPercentage}% Match</span>
+                                        </div>
+                                        <div className="mb-2">
+                                            <h6 className="fw-bold text-warning small mb-1">Missing Keywords:</h6>
+                                            {jdResult.missingKeywords?.map((kw, i) => (
+                                                <span key={i} className="badge bg-danger bg-opacity-25 text-danger border border-danger me-1 mb-1">
+                                                    {kw}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -380,97 +461,139 @@ export default function FinalReviewStep() {
                 </div>
             )}
 
-            {/* AI COVER LETTER POPUP MODAL */}
+            {/* 🚀 EXECUTIVE AI COVER LETTER MODAL */}
             {showCoverModal && (
-                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)', zIndex: 1060 }}>
                     <div className="modal-dialog modal-dialog-centered modal-lg">
-                        <div className="modal-content bg-dark text-white border border-secondary shadow-lg rounded-4">
-                            <div className="modal-header border-secondary pb-2">
-                                <h5 className="modal-title fw-bold text-info d-flex align-items-center gap-2">
-                                    ✉️ AI Cover Letter Generator
-                                </h5>
+                        <div className="modal-content bg-dark text-white border border-secondary border-opacity-30 shadow-2xl rounded-4 overflow-hidden">
+
+                            {/* Modal Header */}
+                            <div className="modal-header border-secondary border-opacity-25 py-3 px-4 bg-black bg-opacity-40">
+                                <div>
+                                    <h5 className="modal-title fw-bold text-info d-flex align-items-center gap-2 mb-0">
+                                        ✉️ Executive Cover Letter Suite
+                                    </h5>
+                                    <span className="text-white-50 extra-small">
+                                        Generates tailored, corporate-ready pitch letters using candidate resume data & target JD.
+                                    </span>
+                                </div>
                                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowCoverModal(false)}></button>
                             </div>
 
-                            <div className="modal-body p-4 text-start">
-                                <div className="row g-2 mb-3">
+                            {/* Modal Body */}
+                            <div className="modal-body p-4 text-start" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
+
+                                {/* Target Input Controls */}
+                                <div className="row g-2.5 mb-3">
                                     <div className="col-12 col-md-6">
-                                        <label className="form-label text-white-50 small mb-1">Target Job Title:</label>
+                                        <label className="form-label text-white-50 extra-small mb-1 fw-bold text-uppercase">Target Job Role *</label>
                                         <input
                                             type="text"
                                             value={coverLetterInput.jobTitle}
                                             onChange={(e) => setCoverLetterInput({ ...coverLetterInput, jobTitle: e.target.value })}
-                                            placeholder="e.g. Senior Frontend Engineer"
-                                            className="form-control glass-input text-white small"
+                                            placeholder="e.g. Senior Full Stack Engineer"
+                                            className="form-control form-control-sm glass-input text-white"
+                                            required
                                         />
                                     </div>
                                     <div className="col-12 col-md-6">
-                                        <label className="form-label text-white-50 small mb-1">Company Name:</label>
+                                        <label className="form-label text-white-50 extra-small mb-1 fw-bold text-uppercase">Company Name</label>
                                         <input
                                             type="text"
                                             value={coverLetterInput.companyName}
                                             onChange={(e) => setCoverLetterInput({ ...coverLetterInput, companyName: e.target.value })}
-                                            placeholder="e.g. Google / Microsoft"
-                                            className="form-control glass-input text-white small"
+                                            placeholder="e.g. Google / Microsoft / Acme Corp"
+                                            className="form-control form-control-sm glass-input text-white"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="mb-3">
-                                    <label className="form-label text-white-50 small mb-1">Optional JD Context:</label>
+                                    <label className="form-label text-white-50 extra-small mb-1 fw-bold text-uppercase">
+                                        Optional Job Requirements & Culture Context
+                                    </label>
                                     <textarea
                                         rows={3}
                                         value={coverLetterInput.jobDescription}
                                         onChange={(e) => setCoverLetterInput({ ...coverLetterInput, jobDescription: e.target.value })}
-                                        placeholder="Paste short JD requirements or company description for better tailoring..."
+                                        placeholder="Paste target JD requirements, core deliverables, or company vision to tailor specific technical impact..."
                                         className="form-control glass-input text-white small"
+                                        style={{ fontSize: '0.8rem' }}
                                     />
                                 </div>
 
                                 <button
                                     onClick={handleGenerateCoverLetter}
-                                    disabled={coverLoading}
-                                    className="btn btn-info text-dark fw-bold btn-sm w-100 py-2 mb-4"
+                                    disabled={coverLoading || !coverLetterInput.jobTitle.trim()}
+                                    className="btn btn-info text-dark fw-bold btn-sm w-100 py-2.5 mb-4 shadow"
                                 >
                                     {coverLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Writing Tailored Cover Letter...
+                                            Analyzing Candidate Experience & Tailoring Letter...
                                         </>
                                     ) : (
-                                        "✨ Generate Cover Letter with AI"
+                                        "✨ Write Targeted Professional Cover Letter"
                                     )}
                                 </button>
 
-                                {/* Cover Letter Output Display */}
+                                {/* 🚀 Formatted Cover Letter Output Area */}
                                 {coverLetterText && (
-                                    <div className="p-3 border border-info border-opacity-25 rounded-3 bg-dark">
-                                        <div className="d-flex justify-content-between align-items-center mb-2 border-bottom border-secondary pb-2">
-                                            <span className="fw-bold text-info small">Generated Cover Letter:</span>
-                                            <button
-                                                onClick={handleCopyCoverLetter}
-                                                className="btn btn-outline-info btn-xs py-1 px-2.5"
-                                                style={{ fontSize: '0.75rem' }}
-                                            >
-                                                📋 Copy to Clipboard
-                                            </button>
+                                    <div className="p-3 border border-info border-opacity-30 rounded-3 bg-black bg-opacity-40 shadow-inner">
+                                        <div className="d-flex flex-wrap justify-content-between align-items-center mb-2.5 pb-2 border-bottom border-secondary border-opacity-25 gap-2">
+                                            <div>
+                                                <span className="fw-bold text-info small d-block">Tailored Cover Letter Preview</span>
+                                                <span className="text-white-50 extra-small" style={{ fontSize: '0.7rem' }}>
+                                                    Words: {coverLetterText.trim().split(/\s+/).length} | PDF outputs with candidate letterhead
+                                                </span>
+                                            </div>
+
+                                            {/* Action Buttons: Copy Text + Download PDF */}
+                                            <div className="d-flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCopyCoverLetter}
+                                                    className="btn btn-outline-info btn-xs py-1.5 px-3 d-flex align-items-center gap-1.5"
+                                                    style={{ fontSize: '0.76rem', borderRadius: '6px' }}
+                                                >
+                                                    <span>📋</span>
+                                                    <span>Copy Text</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDownloadCoverLetterPDF}
+                                                    className="btn btn-info text-dark fw-bold btn-xs py-1.5 px-3.5 d-flex align-items-center gap-1.5 shadow"
+                                                    style={{ fontSize: '0.76rem', borderRadius: '6px' }}
+                                                >
+                                                    <span>📥</span>
+                                                    <span>Download PDF Letter</span>
+                                                </button>
+                                            </div>
                                         </div>
+
                                         <textarea
-                                            rows={10}
+                                            rows={12}
                                             value={coverLetterText}
                                             onChange={(e) => setCoverLetterText(e.target.value)}
-                                            className="form-control glass-input text-white small border-0"
-                                            style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
+                                            className="form-control glass-input text-white small border-0 p-2"
+                                            style={{
+                                                fontSize: '0.84rem',
+                                                lineHeight: '1.6',
+                                                backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                                                borderRadius: '8px'
+                                            }}
                                         />
                                     </div>
                                 )}
                             </div>
 
-                            <div className="modal-footer border-secondary pt-2">
-                                <button onClick={() => setShowCoverModal(false)} className="btn btn-outline-light btn-sm px-4">
+                            <div className="modal-footer border-secondary border-opacity-25 py-2.5 px-4 bg-black bg-opacity-40">
+                                <button onClick={() => setShowCoverModal(false)} className="btn btn-outline-secondary btn-sm px-4 rounded-pill">
                                     Close
                                 </button>
                             </div>
+
                         </div>
                     </div>
                 </div>

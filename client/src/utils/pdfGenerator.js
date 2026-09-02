@@ -10,6 +10,19 @@ const safeText = (val) => {
 
 const safeArray = (arr) => (Array.isArray(arr) ? arr : []);
 
+// Helper to safely embed Base64 image
+const embedImageSafely = (doc, base64Image, x, y, width, height) => {
+    if (!base64Image) return false;
+    try {
+        const format = base64Image.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(base64Image, format, x, y, width, height);
+        return true;
+    } catch (e) {
+        console.warn("Could not embed image into PDF:", e);
+        return false;
+    }
+};
+
 export const generateResumePDF = (resumeData, fileName = 'My_Resume', templateType = 'template-ats') => {
     const doc = new jsPDF({
         orientation: 'portrait',
@@ -21,15 +34,18 @@ export const generateResumePDF = (resumeData, fileName = 'My_Resume', templateTy
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 12;
 
+    // Read stored profile avatar from LocalStorage
+    const userAvatar = typeof window !== 'undefined' ? localStorage.getItem('user_avatar') : null;
+
     switch (templateType) {
         case 'template-sidebar':
-            renderModernSidebar(doc, resumeData, pageWidth, pageHeight, margin);
+            renderModernSidebar(doc, resumeData, pageWidth, pageHeight, margin, userAvatar);
             break;
         case 'template-corporate':
             renderCleanCorporate(doc, resumeData, pageWidth, pageHeight, margin);
             break;
         case 'template-header-banner':
-            renderExecutiveBanner(doc, resumeData, pageWidth, pageHeight, margin);
+            renderExecutiveBanner(doc, resumeData, pageWidth, pageHeight, margin, userAvatar);
             break;
         case 'template-classic-table':
             renderClassicAcademic(doc, resumeData, pageWidth, pageHeight, margin);
@@ -45,7 +61,7 @@ export const generateResumePDF = (resumeData, fileName = 'My_Resume', templateTy
 };
 
 /* ====================================================================
-   1. STANDARD ATS TEMPLATE
+   1. STANDARD ATS TEMPLATE (Clean text-only for parser compatibility)
    ==================================================================== */
 function renderStandardATS(doc, data, pageWidth, pageHeight, margin) {
     let y = margin;
@@ -199,9 +215,9 @@ function renderStandardATS(doc, data, pageWidth, pageHeight, margin) {
 }
 
 /* ====================================================================
-   2. MODERN SIDEBAR TEMPLATE (Two-Column Layout)
+   2. MODERN SIDEBAR TEMPLATE (Embeds Photo in Left Sidebar)
    ==================================================================== */
-function renderModernSidebar(doc, data, pageWidth, pageHeight, margin) {
+function renderModernSidebar(doc, data, pageWidth, pageHeight, margin, userAvatar) {
     const sidebarWidth = 65;
     const mainWidth = pageWidth - sidebarWidth;
 
@@ -211,67 +227,75 @@ function renderModernSidebar(doc, data, pageWidth, pageHeight, margin) {
     let leftY = margin;
     let rightY = margin;
 
+    // 🚀 EMBED PHOTO IF AVAILABLE
+    if (userAvatar) {
+        const photoSize = 26;
+        const photoX = (sidebarWidth - photoSize) / 2;
+        const success = embedImageSafely(doc, userAvatar, photoX, leftY, photoSize, photoSize);
+        leftY += success ? photoSize + 5 : 0;
+    }
+
     const personal = data.personalInfo || {};
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
+    doc.setFontSize(12);
     doc.setTextColor(255, 255, 255);
-    const nameSplit = doc.splitTextToSize((personal.fullName || 'YOUR NAME').toUpperCase(), sidebarWidth - 16);
-    doc.text(nameSplit, 8, leftY);
-    leftY += nameSplit.length * 5 + 2;
+    const nameSplit = doc.splitTextToSize((personal.fullName || 'YOUR NAME').toUpperCase(), sidebarWidth - 14);
+    doc.text(nameSplit, 7, leftY);
+    leftY += nameSplit.length * 4.5 + 2;
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setTextColor(189, 195, 199);
-    doc.text(personal.title || '', 8, leftY);
-    leftY += 8;
+    doc.text(personal.title || '', 7, leftY);
+    leftY += 7;
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
+    doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
-    doc.text('CONTACT', 8, leftY);
+    doc.text('CONTACT', 7, leftY);
     leftY += 4;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(236, 240, 241);
     [personal.email, personal.phone, personal.location, personal.linkedin, personal.github].filter(Boolean).forEach((info) => {
-        const split = doc.splitTextToSize(safeText(info), sidebarWidth - 16);
-        doc.text(split, 8, leftY);
-        leftY += split.length * 3.5 + 2;
+        const split = doc.splitTextToSize(safeText(info), sidebarWidth - 14);
+        doc.text(split, 7, leftY);
+        leftY += split.length * 3.4 + 1.5;
     });
     leftY += 4;
 
     if (safeArray(data.skills).length > 0) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9.5);
+        doc.setFontSize(9);
         doc.setTextColor(255, 255, 255);
-        doc.text('SKILLS', 8, leftY);
+        doc.text('SKILLS', 7, leftY);
         leftY += 4;
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
         safeArray(data.skills).forEach((skill) => {
-            const split = doc.splitTextToSize(`• ${safeText(skill)}`, sidebarWidth - 16);
-            doc.text(split, 8, leftY);
-            leftY += split.length * 3.5 + 1;
+            const split = doc.splitTextToSize(`• ${safeText(skill)}`, sidebarWidth - 14);
+            doc.text(split, 7, leftY);
+            leftY += split.length * 3.4 + 1;
         });
         leftY += 4;
     }
 
     if (safeArray(data.certifications).length > 0) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9.5);
+        doc.setFontSize(9);
         doc.setTextColor(255, 255, 255);
-        doc.text('CERTIFICATIONS', 8, leftY);
+        doc.text('CERTIFICATIONS', 7, leftY);
         leftY += 4;
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
         safeArray(data.certifications).forEach((cert) => {
             const certName = typeof cert === 'object' ? cert.name : cert;
-            const split = doc.splitTextToSize(`• ${safeText(certName)}`, sidebarWidth - 16);
-            doc.text(split, 8, leftY);
-            leftY += split.length * 3.5 + 1.5;
+            const split = doc.splitTextToSize(`• ${safeText(certName)}`, sidebarWidth - 14);
+            doc.text(split, 7, leftY);
+            leftY += split.length * 3.4 + 1.2;
         });
     }
 
@@ -506,9 +530,9 @@ function renderCleanCorporate(doc, data, pageWidth, pageHeight, margin) {
 }
 
 /* ====================================================================
-   4. EXECUTIVE BANNER TEMPLATE
+   4. EXECUTIVE BANNER TEMPLATE (Embeds Photo in Top Header)
    ==================================================================== */
-function renderExecutiveBanner(doc, data, pageWidth, pageHeight, margin) {
+function renderExecutiveBanner(doc, data, pageWidth, pageHeight, margin, userAvatar) {
     let y = margin;
 
     const checkPageBreak = (neededHeight) => {
@@ -531,6 +555,15 @@ function renderExecutiveBanner(doc, data, pageWidth, pageHeight, margin) {
     };
 
     const personal = data.personalInfo || {};
+
+    // 🚀 EMBED PHOTO AT TOP RIGHT IF PRESENT
+    if (userAvatar) {
+        const photoWidth = 22;
+        const photoHeight = 22;
+        const photoX = pageWidth - margin - photoWidth;
+        embedImageSafely(doc, userAvatar, photoX, y, photoWidth, photoHeight);
+    }
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
     doc.setTextColor(14, 165, 233);

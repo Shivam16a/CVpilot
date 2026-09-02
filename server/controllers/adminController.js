@@ -1,12 +1,13 @@
 // server/controllers/adminController.js
 const User = require('../models/users');
 const Resume = require('../models/resume');
+const { Visitor, SuspiciousLog } = require('../models/SecurityLog');
 
 // 1. GET ALL USERS (Admin Dashboard Data)
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({})
-            .select('-password -otp -otpExpire') // Sensitive OTP & Password hide karein
+            .select('-password -otp -otpExpire')
             .sort({ createdAt: -1 });
 
         return res.status(200).json({
@@ -36,7 +37,7 @@ const toggleBlockUser = async (req, res) => {
             });
         }
 
-        // Security Guard: Admin khud ko block nahi kar sakta
+        // Security Guard: Admin cannot block their own account
         if (user._id.toString() === req.user._id.toString()) {
             return res.status(400).json({
                 success: false,
@@ -44,7 +45,6 @@ const toggleBlockUser = async (req, res) => {
             });
         }
 
-        // Toggle Block Status
         user.isBlocked = !user.isBlocked;
         await user.save();
 
@@ -63,12 +63,20 @@ const toggleBlockUser = async (req, res) => {
     }
 };
 
-// 3. GET SYSTEM METRICS (Total Users, Resumes Count, Blocked Count)
+// 3. GET SYSTEM & SECURITY METRICS (Total Users, Resumes, Unique Devices & Suspicious Logs)
 const getAdminStats = async (req, res) => {
     try {
         const totalUsers = await User.countDocuments();
         const blockedUsers = await User.countDocuments({ isBlocked: true });
         const totalResumes = await Resume.countDocuments();
+
+        // 🚀 Count unique physical visitor devices by unique IP
+        const uniqueVisitors = await Visitor.countDocuments();
+
+        // 🚀 Fetch latest 35 Suspicious Route Intrusion attempts
+        const suspiciousLogs = await SuspiciousLog.find()
+            .sort({ timestamp: -1 })
+            .limit(35);
 
         // Template Popularity Analytics Data for Graph
         const templateAnalytics = await Resume.aggregate([
@@ -77,8 +85,14 @@ const getAdminStats = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            stats: { totalUsers, blockedUsers, totalResumes },
-            templateAnalytics
+            stats: {
+                totalUsers,
+                blockedUsers,
+                totalResumes,
+                uniqueVisitors // 🚀 Unique Devices count
+            },
+            templateAnalytics,
+            suspiciousLogs
         });
     } catch (error) {
         console.error("Admin Stats Error:", error);
@@ -86,13 +100,12 @@ const getAdminStats = async (req, res) => {
     }
 };
 
-// 5. Fetch all users ALONG WITH their created resumes list
+// 4. FETCH ALL USERS ALONG WITH THEIR CREATED RESUMES LIST
 const getAllUsersWithResumes = async (req, res) => {
     try {
         const users = await User.find().select('-password').lean();
         const resumes = await Resume.find().select('userId resumeTitle template updatedAt createdAt').lean();
 
-        // Attach resumes array to each corresponding user object
         const usersWithResumes = users.map(user => {
             const userResumes = resumes.filter(r => String(r.userId) === String(user._id));
             return {
@@ -109,7 +122,7 @@ const getAllUsersWithResumes = async (req, res) => {
     }
 };
 
-// TOGGLE USER ADMIN ROLE (User -> Admin OR Admin -> User)
+// 5. TOGGLE USER ADMIN ROLE (User -> Admin OR Admin -> User)
 const toggleAdminRole = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -122,7 +135,6 @@ const toggleAdminRole = async (req, res) => {
             });
         }
 
-        // Security Guard: Admin khud ka role change nahi kar sakta
         if (user._id.toString() === req.user._id.toString()) {
             return res.status(400).json({
                 success: false,
@@ -130,7 +142,6 @@ const toggleAdminRole = async (req, res) => {
             });
         }
 
-        // Toggle Admin Status
         user.isAdmin = !user.isAdmin;
         await user.save();
 
@@ -149,11 +160,47 @@ const toggleAdminRole = async (req, res) => {
     }
 };
 
+// 🚀 6. LOG SUSPICIOUS ROUTE ATTEMPT (Reported by Frontend 404 / Invalid URL Visit)
+const logSuspiciousActivity = async (req, res) => {
+    try {
+        const { attemptedRoute, userId, username, email } = req.body;
+
+        const rawIp = req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+            req.socket?.remoteAddress ||
+            req.ip ||
+            '127.0.0.1';
+        const cleanIp = rawIp.replace('::ffff:', '');
+        const userAgent = req.headers['user-agent'] || 'Unknown Device';
+
+        // Severity evaluation
+        let severity = 'MEDIUM';
+        const dangerousPatterns = ['admin', 'config', '.env', 'eval', 'wp-', 'backup', 'root', 'api/v'];
+        if (dangerousPatterns.some(term => attemptedRoute?.toLowerCase().includes(term))) {
+            severity = 'HIGH';
+        }
+
+        const logEntry = await SuspiciousLog.create({
+            ip: cleanIp,
+            attemptedRoute: attemptedRoute || 'Unknown Route',
+            userId: userId || null,
+            username: username || 'Guest Visitor',
+            email: email || 'Unauthenticated',
+            userAgent,
+            severity
+        });
+
+        return res.status(201).json({ success: true, log: logEntry });
+    } catch (error) {
+        console.error("Suspicious Logging Error:", error);
+        return res.status(500).json({ success: false, message: "Logging failed: " + error.message });
+    }
+};
 
 module.exports = {
     getAllUsers,
     toggleBlockUser,
     getAdminStats,
     toggleAdminRole,
-    getAllUsersWithResumes
+    getAllUsersWithResumes,
+    logSuspiciousActivity // 🚀 Exported
 };

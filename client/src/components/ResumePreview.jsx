@@ -7,7 +7,9 @@ const ResumePreview = forwardRef((props, ref) => {
     const { resumeData, currentStep, selectedTemplate } = useResumeStore();
     const { personalInfo, summary, skills, education, experience, projects, certifications, languages } = resumeData;
 
-    // Direct flat text recovery controller format
+    // Retrieve saved profile picture
+    const userAvatar = localStorage.getItem('user_avatar');
+
     const renderSafeText = (textValue) => {
         if (!textValue) return '';
         if (typeof textValue === 'object') {
@@ -19,7 +21,6 @@ const ResumePreview = forwardRef((props, ref) => {
         return textValue;
     };
 
-    // Safe parsing matrix to convert any string/object/array into clean renderable arrays
     const getSafeArray = (arr) => {
         if (!arr) return [];
         if (Array.isArray(arr)) return arr;
@@ -30,7 +31,6 @@ const ResumePreview = forwardRef((props, ref) => {
     const safeText = renderSafeText;
     const safeArray = getSafeArray;
 
-    // 🔗 External Safe Link Formatter (Opens in NEW TAB)
     const renderExternalLink = (url, label, className = "text-primary fw-semibold text-decoration-none") => {
         if (!url) return null;
         const cleanUrl = safeText(url).trim();
@@ -41,18 +41,11 @@ const ResumePreview = forwardRef((props, ref) => {
             : `https://${cleanUrl}`;
 
         return (
-            <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={className}
-            >
+            <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
                 {label}
             </a>
         );
     };
-
-    // client/src/components/ResumePreview.jsx (Updated Parser Block)
 
     const parseCertData = (certItem) => {
         let name = safeText(certItem?.name || certItem);
@@ -60,19 +53,16 @@ const ResumePreview = forwardRef((props, ref) => {
         let issueDate = safeText(certItem?.issueDate);
         let link = safeText(certItem?.link || certItem?.url || certItem?.credentialUrl);
 
-        // 🔍 Smart Mongo Atlas Field Correction:
-        // Check if issueDate or organization accidentally holds the URL
         if (!link) {
             if (issueDate.includes('http://') || issueDate.includes('https://') || issueDate.includes('drive.google')) {
                 link = issueDate;
-                issueDate = ''; // Clear issueDate so URL string doesn't print as date text
+                issueDate = '';
             } else if (organization.includes('http://') || organization.includes('https://') || organization.includes('drive.google')) {
                 link = organization;
                 organization = '';
             }
         }
 
-        // Standard URL Regex fallback in name string
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const foundUrls = name.match(urlRegex);
         if (foundUrls && foundUrls.length > 0) {
@@ -109,8 +99,7 @@ const ResumePreview = forwardRef((props, ref) => {
                     color: '#111111'
                 }}
             >
-
-                {/* ==================== 0. DEFAULT STANDARD ATS LAYOUT ==================== */}
+                {/* ==================== 0. DEFAULT STANDARD ATS LAYOUT (Strict text-only for parsing) ==================== */}
                 {(!selectedTemplate || selectedTemplate === 'default' || selectedTemplate === 'template-ats') && (
                     <div className="p-4">
                         <div className="text-center mb-3">
@@ -216,16 +205,19 @@ const ResumePreview = forwardRef((props, ref) => {
                     </div>
                 )}
 
-
-                {/* ==================== TEMPLATE 1: MODERN SIDEBAR ==================== */}
+                {/* ==================== TEMPLATE 1: MODERN SIDEBAR (With Profile Photo) ==================== */}
                 {selectedTemplate === 'template-sidebar' && (
                     <div className="d-flex w-100" style={{ minHeight: '842px' }}>
                         {/* Left Sidebar */}
                         <div className="p-3 text-white d-flex flex-column justify-content-between" style={{ width: '32%', background: '#2c3e50', fontSize: '10px' }}>
                             <div>
                                 <div className="text-center mb-3">
-                                    <div className="mx-auto rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white mb-2" style={{ width: '65px', height: '65px', fontSize: '24px' }}>
-                                        👤
+                                    <div className="mx-auto rounded-circle overflow-hidden border border-2 border-light shadow-sm d-flex align-items-center justify-content-center bg-secondary text-white mb-2" style={{ width: '75px', height: '75px' }}>
+                                        {userAvatar ? (
+                                            <img src={userAvatar} alt="Profile" className="w-100 h-100 object-fit-cover" />
+                                        ) : (
+                                            <span style={{ fontSize: '26px' }}>👤</span>
+                                        )}
                                     </div>
                                 </div>
 
@@ -333,7 +325,6 @@ const ResumePreview = forwardRef((props, ref) => {
                     </div>
                 )}
 
-
                 {/* ==================== TEMPLATE 2: CLEAN CORPORATE ==================== */}
                 {selectedTemplate === 'template-corporate' && (
                     <div className="p-4">
@@ -426,8 +417,7 @@ const ResumePreview = forwardRef((props, ref) => {
                     </div>
                 )}
 
-
-                {/* ==================== TEMPLATE 3: EXECUTIVE GREY HEADER ==================== */}
+                {/* ==================== TEMPLATE 3: EXECUTIVE GREY HEADER (With Profile Photo Banner) ==================== */}
                 {selectedTemplate === 'template-header-banner' && (
                     <div>
                         <div className="p-4 d-flex justify-content-between align-items-center" style={{ background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
@@ -435,6 +425,13 @@ const ResumePreview = forwardRef((props, ref) => {
                                 <h3 className="fw-bold text-uppercase m-0" style={{ fontSize: '20px' }}>{safeText(personalInfo?.fullName) || 'YOUR NAME'}</h3>
                                 <div className="text-primary fw-semibold">{safeText(personalInfo?.title) || 'PROFESSIONAL TITLE'}</div>
                             </div>
+
+                            {/* Executive Header Photo Avatar */}
+                            {userAvatar && (
+                                <div className="rounded-3 overflow-hidden border border-secondary shadow-sm" style={{ width: '65px', height: '65px' }}>
+                                    <img src={userAvatar} alt="Executive Headshot" className="w-100 h-100 object-fit-cover" />
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-4">
@@ -520,7 +517,6 @@ const ResumePreview = forwardRef((props, ref) => {
                         </div>
                     </div>
                 )}
-
 
                 {/* ==================== TEMPLATE 4: CLASSIC ACADEMIC TABLE ==================== */}
                 {selectedTemplate === 'template-classic-table' && (
@@ -622,7 +618,6 @@ const ResumePreview = forwardRef((props, ref) => {
                         )}
                     </div>
                 )}
-
             </div>
         </div>
     );

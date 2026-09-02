@@ -1,7 +1,8 @@
 // client/src/services/adminService.js
+import axios from 'axios';
+
 const API_BASE_URL = 'http://localhost:6050/api/admin';
 
-// Helper for Authorization Header
 const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
@@ -27,7 +28,10 @@ export const fetchAllUsers = async () => {
 };
 
 export const fetchUsersWithResumes = async () => {
-    const res = await axios.get(`${API_URL}/users-with-resumes`, getAuthHeaders());
+    const token = localStorage.getItem('token');
+    const res = await axios.get(`${API_BASE_URL}/users-with-resumes`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
     return res.data;
 };
 
@@ -40,7 +44,7 @@ export const toggleBlockUserApi = async (userId) => {
     return res.json();
 };
 
-// Toggle User Admin Role API
+// 4. Toggle User Admin Role API
 export const toggleAdminRoleApi = async (userId) => {
     const token = localStorage.getItem('token');
     const res = await fetch(`${API_BASE_URL}/toggle-role/${userId}`, {
@@ -51,4 +55,14 @@ export const toggleAdminRoleApi = async (userId) => {
         }
     });
     return res.json();
+};
+
+// 🚀 5. Report Unknown / Suspicious Route Hit (Called by 404 NotFound page)
+export const reportSuspiciousRouteApi = async (payload) => {
+    try {
+        const res = await axios.post(`${API_BASE_URL}/report-suspicious-route`, payload);
+        return res.data;
+    } catch (e) {
+        return { success: false };
+    }
 };

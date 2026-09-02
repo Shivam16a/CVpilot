@@ -8,17 +8,17 @@ import { toggleBlockUserApi, toggleAdminRoleApi } from '../services/adminService
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function AdminDashboard() {
-    const [stats, setStats] = useState({ totalUsers: 0, blockedUsers: 0, totalResumes: 0 });
+    const [stats, setStats] = useState({ totalUsers: 0, blockedUsers: 0, totalResumes: 0, uniqueVisitors: 0 });
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [templateData, setTemplateData] = useState([]);
+    const [suspiciousLogs, setSuspiciousLogs] = useState([]);
 
     const [filterType, setFilterType] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedUserResumes, setSelectedUserResumes] = useState(null); // Selected User Modal
+    const [selectedUserResumes, setSelectedUserResumes] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // 🚀 Missing State Fixed
     const [actionLoading, setActionLoading] = useState({});
     const [toast, setToast] = useState({ message: '', type: 'success' });
 
@@ -34,7 +34,8 @@ export default function AdminDashboard() {
             ]);
 
             if (statsRes.data.success) {
-                setStats(statsRes.data.stats);
+                setStats(statsRes.data.stats || { totalUsers: 0, blockedUsers: 0, totalResumes: 0, uniqueVisitors: 0 });
+                setSuspiciousLogs(statsRes.data.suspiciousLogs || []);
                 setTemplateData(statsRes.data.templateAnalytics?.map(item => ({
                     name: item._id || 'Standard ATS',
                     count: item.count
@@ -57,7 +58,6 @@ export default function AdminDashboard() {
         loadAdminDashboardData();
     }, []);
 
-    // 🚀 Missing Action 1: Toggle Block Status
     const handleToggleBlock = async (userId, currentBlockedStatus, username) => {
         const actionText = currentBlockedStatus ? 'UNBLOCK' : 'BLOCK';
         if (!window.confirm(`Are you sure you want to ${actionText} user "${username}"?`)) return;
@@ -78,7 +78,6 @@ export default function AdminDashboard() {
         }
     };
 
-    // 🚀 Missing Action 2: Toggle Admin Role
     const handleToggleRole = async (userId, currentAdminStatus, username) => {
         const actionText = currentAdminStatus ? 'Demote to USER' : 'Promote to ADMIN';
         if (!window.confirm(`Are you sure you want to ${actionText} for "${username}"?`)) return;
@@ -99,7 +98,6 @@ export default function AdminDashboard() {
         }
     };
 
-    // Interactive Search & Filter Logic
     useEffect(() => {
         let result = users;
         if (filterType === 'ACTIVE') result = result.filter(u => !u.isBlocked);
@@ -115,14 +113,16 @@ export default function AdminDashboard() {
     }, [filterType, searchQuery, users]);
 
     return (
-        <div className="container-fluid py-4 text-white" style={{ minHeight: '100vh', backgroundColor: '#0b0f19' }}>
+        <div className="container-fluid py-4 text-white" style={{ minHeight: '100vh', backgroundColor: '#070a12' }}>
             <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: '', type: 'success' })} />
 
-            {/* Header Control */}
+            {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25 flex-wrap gap-2">
                 <div>
-                    <h3 className="fw-bold text-info mb-1">📊 Executive Platform Analytics</h3>
-                    <p className="text-white-50 small mb-0">Monitor user activity, created resume sheets, and system performance graph metrics.</p>
+                    <h3 className="fw-bold text-info mb-1 d-flex align-items-center gap-2">
+                        🛡️ Threat Intelligence & Executive Analytics
+                    </h3>
+                    <p className="text-white-50 small mb-0">De-duplicated unique device traffic, 404 intrusion traps & account governance.</p>
                 </div>
                 <div className="d-flex align-items-center gap-2">
                     <input
@@ -133,34 +133,50 @@ export default function AdminDashboard() {
                         className="form-control form-control-sm bg-dark text-white border-secondary"
                         style={{ width: '220px' }}
                     />
-                    <button onClick={loadAdminDashboardData} className="btn btn-outline-info btn-sm">🔄 Sync</button>
+                    <button onClick={loadAdminDashboardData} className="btn btn-outline-info btn-sm">🔄 Sync Data</button>
                 </div>
             </div>
 
-            {/* 🚀 ANALYTICS PROGRESS CHARTS & METRICS ROW */}
+            {/* 🚀 1. METRICS ROW WITH UNIQUE PHYSICAL DEVICES / IP COUNTER */}
             <div className="row g-3 mb-4">
-                {/* Metric Summary Cards */}
-                <div className="col-12 col-lg-4">
-                    <div className="d-flex flex-column gap-3 h-100">
-                        <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-3">
-                            <span className="text-white-50 extra-small font-monospace">REGISTERED ACCOUNTS</span>
-                            <h2 className="fw-bold text-info mb-0">{stats.totalUsers}</h2>
-                        </div>
-                        <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-3">
-                            <span className="text-white-50 extra-small font-monospace">TOTAL GENERATED RESUMES</span>
-                            <h2 className="fw-bold text-success mb-0">{stats.totalResumes}</h2>
-                        </div>
-                        <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-3">
-                            <span className="text-white-50 extra-small font-monospace">SUSPENDED ACCOUNTS</span>
-                            <h2 className="fw-bold text-danger mb-0">{stats.blockedUsers}</h2>
-                        </div>
+                <div className="col-12 col-sm-6 col-xl-3">
+                    <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-4 h-100 shadow-sm">
+                        <span className="text-white-50 extra-small font-monospace">UNIQUE PHYSICAL DEVICES (IPs)</span>
+                        <h2 className="fw-bold text-primary mb-0 mt-1">{stats.uniqueVisitors}</h2>
+                        <span className="text-white-50 extra-small">De-duplicated across all accounts</span>
                     </div>
                 </div>
 
-                {/* Template Usage Bar Chart */}
-                <div className="col-12 col-md-6 col-lg-4">
-                    <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-3 h-100">
-                        <h6 className="fw-bold text-info mb-3">📈 Template Usage Breakdown</h6>
+                <div className="col-12 col-sm-6 col-xl-3">
+                    <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-4 h-100 shadow-sm">
+                        <span className="text-white-50 extra-small font-monospace">REGISTERED ACCOUNTS</span>
+                        <h2 className="fw-bold text-info mb-0 mt-1">{stats.totalUsers}</h2>
+                        <span className="text-white-50 extra-small">Total registered users</span>
+                    </div>
+                </div>
+
+                <div className="col-12 col-sm-6 col-xl-3">
+                    <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-4 h-100 shadow-sm">
+                        <span className="text-white-50 extra-small font-monospace">TOTAL GENERATED RESUMES</span>
+                        <h2 className="fw-bold text-success mb-0 mt-1">{stats.totalResumes}</h2>
+                        <span className="text-white-50 extra-small">Synced to MongoDB Atlas</span>
+                    </div>
+                </div>
+
+                <div className="col-12 col-sm-6 col-xl-3">
+                    <div className="p-3 bg-dark border border-danger border-opacity-25 rounded-4 h-100 shadow-sm">
+                        <span className="text-danger extra-small font-monospace">SUSPENDED ACCOUNTS</span>
+                        <h2 className="fw-bold text-danger mb-0 mt-1">{stats.blockedUsers}</h2>
+                        <span className="text-white-50 extra-small">Quarantined for abuse</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* 🚀 2. ANALYTICS PROGRESS CHARTS */}
+            <div className="row g-3 mb-4">
+                <div className="col-12 col-lg-6">
+                    <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-4 h-100">
+                        <h6 className="fw-bold text-info mb-3">📈 Template Adoption Breakdown</h6>
                         <div style={{ width: '100%', height: '180px' }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={templateData}>
@@ -174,9 +190,8 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                {/* User Status Pie Chart */}
-                <div className="col-12 col-md-6 col-lg-4">
-                    <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-3 h-100">
+                <div className="col-12 col-lg-6">
+                    <div className="p-3 bg-dark border border-secondary border-opacity-25 rounded-4 h-100">
                         <h6 className="fw-bold text-info mb-3">🎯 User Status Distribution</h6>
                         <div style={{ width: '100%', height: '180px' }}>
                             <ResponsiveContainer width="100%" height="100%">
@@ -196,8 +211,65 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* 🚀 USER MANAGEMENT TABLE WITH RESUME INSPECTION */}
-            <div className="p-3 border border-secondary border-opacity-25 rounded-3 bg-dark shadow-lg">
+            {/* 🚀 3. SUSPICIOUS ROUTE ATTEMPTS & 404 INTRUSION TRAP MONITOR */}
+            <div className="p-3.5 border border-danger border-opacity-30 rounded-4 bg-dark shadow-lg mb-4" style={{ background: 'rgba(20, 10, 15, 0.7)' }}>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 className="fw-bold m-0 text-danger d-flex align-items-center gap-2">
+                            🚨 Suspicious Route Intrusion Logs
+                        </h5>
+                        <span className="text-white-50 extra-small">Captured 404, probe, & unauthorized route attempts with user IP</span>
+                    </div>
+                    <span className="badge bg-danger bg-opacity-25 text-danger border border-danger px-2.5 py-1 font-monospace">
+                        {suspiciousLogs.length} Events Trapped
+                    </span>
+                </div>
+
+                {suspiciousLogs.length === 0 ? (
+                    <div className="text-center py-4 text-white-50 small">No suspicious intrusions detected yet.</div>
+                ) : (
+                    <div className="table-responsive" style={{ maxHeight: '270px', overflowY: 'auto' }}>
+                        <table className="table table-dark table-sm align-middle mb-0" style={{ fontSize: '0.8rem' }}>
+                            <thead>
+                                <tr className="text-white-50">
+                                    <th>Timestamp</th>
+                                    <th>Client IP</th>
+                                    <th>Attempted Path</th>
+                                    <th>Account / Email</th>
+                                    <th>Severity</th>
+                                    <th>Device / Browser</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {suspiciousLogs.map((log) => (
+                                    <tr key={log._id}>
+                                        <td className="text-white-50 font-monospace" style={{ fontSize: '0.72rem' }}>
+                                            {new Date(log.timestamp).toLocaleTimeString()}
+                                        </td>
+                                        <td className="text-warning fw-bold font-monospace">{log.ip}</td>
+                                        <td className="text-danger font-monospace fw-semibold">{log.attemptedRoute}</td>
+                                        <td>
+                                            <span className="fw-semibold text-white">{log.username}</span>
+                                            <span className="text-white-50 extra-small d-block">{log.email}</span>
+                                        </td>
+                                        <td>
+                                            <span className={`badge ${log.severity === 'HIGH' ? 'bg-danger text-white' : 'bg-warning text-dark'}`}>
+                                                {log.severity}
+                                            </span>
+                                        </td>
+                                        <td className="text-white-50 extra-small text-truncate" style={{ maxWidth: '220px' }} title={log.userAgent}>
+                                            {log.userAgent}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            {/* 🚀 4. USER MANAGEMENT TABLE WITH RESUME INSPECTION */}
+            <div className="p-3 border border-secondary border-opacity-25 rounded-4 bg-dark shadow-lg">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <h5 className="fw-bold m-0 text-white">
                         User Activity & Resume Monitoring <span className="badge bg-secondary ms-2">{filteredUsers.length} Users</span>
@@ -224,7 +296,6 @@ export default function AdminDashboard() {
                                     <tr key={u._id}>
                                         <td className="fw-bold text-info">{u.username}</td>
                                         <td>{u.email}</td>
-                                        {/* 🛡️ DIRECT ROLE CHANGE DROPDOWN */}
                                         <td>
                                             <select
                                                 value={u.isAdmin ? 'admin' : 'user'}
@@ -246,7 +317,6 @@ export default function AdminDashboard() {
                                             </select>
                                         </td>
 
-                                        {/* 🚫 DIRECT BLOCK / UNBLOCK DROPDOWN */}
                                         <td>
                                             <select
                                                 value={u.isBlocked ? 'blocked' : 'active'}
@@ -289,7 +359,7 @@ export default function AdminDashboard() {
                 )}
             </div>
 
-            {/* 🚀 USER RESUME DETAILS MODAL POPUP */}
+            {/* Resume Inspection Modal */}
             {selectedUserResumes && (
                 <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)' }}>
                     <div className="modal-dialog modal-dialog-centered modal-lg">
