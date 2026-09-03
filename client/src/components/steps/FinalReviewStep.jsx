@@ -6,6 +6,7 @@ import { useResumeStore } from '../../store/useResumeStore';
 import { generateResumePDF } from '../../utils/pdfGenerator';
 import Toast from '../Toast';
 import JobBoardModal from '../JobBoardModal';
+import ResumeDropzoneModal from '../ResumeDropzoneModal';
 import { generateCoverLetterPDF } from '../../utils/coverLetterPDF';
 
 export default function FinalReviewStep() {
@@ -13,6 +14,7 @@ export default function FinalReviewStep() {
     const { resumeData, setStep, selectedTemplate, setTemplate, setFullResume, startNewResume } = useResumeStore();
     const [dbLoading, setDbLoading] = useState(false);
     const [showJobBoard, setShowJobBoard] = useState(false);
+    const [showDropzoneModal, setShowDropzoneModal] = useState(false);
 
     // ATS Analyzer States
     const [atsLoading, setAtsLoading] = useState(false);
@@ -34,6 +36,7 @@ export default function FinalReviewStep() {
     const [coverLetterText, setCoverLetterText] = useState('');
     const [coverLoading, setCoverLoading] = useState(false);
     const [showCoverModal, setShowCoverModal] = useState(false);
+    const [optimizingPage, setOptimizingPage] = useState(false);
 
     const [resumeTitle, setResumeTitle] = useState(resumeData.resumeTitle || 'My FullStack Resume');
     const [toast, setToast] = useState({ message: '', type: 'success' });
@@ -51,7 +54,33 @@ export default function FinalReviewStep() {
         }
     };
 
-    // 🚀 Professional Cover Letter Download Handler (With Full Metadata)
+    // 🚀 AI 1-Page Layout Optimizer Handler
+    const handleOptimizeOnePage = async () => {
+        if (!window.confirm("AI will condense and tighten bullet points and summaries to fit a single page. Proceed?")) return;
+
+        setOptimizingPage(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(
+                'http://localhost:6050/api/resume/optimize-one-page',
+                { resumeData },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (res.data.success && res.data.resumeData) {
+                setFullResume(res.data.resumeData);
+                showToast("Resume successfully optimized for a 1-page layout! 📄", "success");
+            } else {
+                showToast(res.data.message || "Failed to optimize layout.", "danger");
+            }
+        } catch (err) {
+            showToast(err.response?.data?.message || "Failed to auto-optimize to 1-page.", "danger");
+        } finally {
+            setOptimizingPage(false);
+        }
+    };
+
+    // Professional Cover Letter PDF Export
     const handleDownloadCoverLetterPDF = () => {
         try {
             generateCoverLetterPDF(
@@ -69,7 +98,7 @@ export default function FinalReviewStep() {
         }
     };
 
-    // Save to Profile
+    // Save Resume to Database Profile
     const handleSaveToProfile = async () => {
         if (!resumeTitle.trim()) {
             showToast("Please enter a name for your resume file.", "danger");
@@ -109,7 +138,7 @@ export default function FinalReviewStep() {
         }
     };
 
-    // ATS Score Handler
+    // ATS Analyzer
     const handleAnalyzeAts = async () => {
         setAtsLoading(true);
         setShowAtsModal(true);
@@ -125,13 +154,13 @@ export default function FinalReviewStep() {
                 setAtsResult(res.data);
             }
         } catch (error) {
-            showToast("Failed to connect to ATS AI service.", "danger");
+            showToast(error.response?.data?.message || "Failed to connect to ATS AI service.", "danger");
         } finally {
             setAtsLoading(false);
         }
     };
 
-    // JD Matcher Handler
+    // JD Matcher
     const handleMatchJd = async () => {
         if (!jdText.trim()) {
             showToast("Please paste Job Description text first.", "danger");
@@ -151,13 +180,13 @@ export default function FinalReviewStep() {
                 showToast("JD Match analysis complete!", "success");
             }
         } catch (error) {
-            showToast("Failed to run JD Matcher.", "danger");
+            showToast(error.response?.data?.message || "Failed to run JD Matcher.", "danger");
         } finally {
             setJdLoading(false);
         }
     };
 
-    // 🚀 High-Impact AI Cover Letter Generator Handler
+    // Cover Letter Generation
     const handleGenerateCoverLetter = async () => {
         if (!coverLetterInput.jobTitle.trim()) {
             showToast("Target Job Title is required.", "danger");
@@ -181,7 +210,7 @@ export default function FinalReviewStep() {
                 showToast("Cover Letter tailored & generated!", "success");
             }
         } catch (error) {
-            showToast("Failed to generate Cover Letter.", "danger");
+            showToast(error.response?.data?.message || "Failed to generate Cover Letter.", "danger");
         } finally {
             setCoverLoading(false);
         }
@@ -205,6 +234,13 @@ export default function FinalReviewStep() {
                 message={toast.message}
                 type={toast.type}
                 onClose={() => setToast({ message: '', type: 'success' })}
+            />
+
+            {/* Drag and Drop Resume Import Modal */}
+            <ResumeDropzoneModal
+                isOpen={showDropzoneModal}
+                onClose={() => setShowDropzoneModal(false)}
+                showToast={showToast}
             />
 
             <div className="glass-card p-3 p-md-4 text-white border-0 shadow-lg mb-4">
@@ -246,29 +282,38 @@ export default function FinalReviewStep() {
                                 </select>
                             </div>
 
-                            <div className="col-12 col-sm-12 col-md-3 col-lg-auto ms-lg-auto d-flex gap-2">
+                            <div className="col-12 col-sm-12 col-md-3 col-lg-auto ms-lg-auto d-flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDropzoneModal(true)}
+                                    className="btn btn-outline-info btn-sm py-1.5 fw-medium flex-fill"
+                                    style={{ borderRadius: '8px', fontSize: '0.8rem' }}
+                                    title="Upload PDF Resume to Auto-Fill Workspace"
+                                >
+                                    📥 Import PDF
+                                </button>
                                 <button
                                     type="button"
                                     onClick={() => setStep(1)}
-                                    className="btn btn-outline-light btn-sm py-1.5 w-100 fw-medium"
-                                    style={{ borderRadius: '8px', fontSize: '0.8rem', minWidth: '90px' }}
+                                    className="btn btn-outline-light btn-sm py-1.5 fw-medium flex-fill"
+                                    style={{ borderRadius: '8px', fontSize: '0.8rem' }}
                                 >
                                     ✏️ Edit Details
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleCreateNewResume}
-                                    className="btn btn-outline-danger btn-sm py-1.5 w-100 fw-medium"
-                                    style={{ borderRadius: '8px', fontSize: '0.8rem', minWidth: '95px' }}
+                                    className="btn btn-outline-danger btn-sm py-1.5 fw-medium flex-fill"
+                                    style={{ borderRadius: '8px', fontSize: '0.8rem' }}
                                 >
                                     ➕ New Blank
                                 </button>
                             </div>
                         </div>
 
-                        {/* 2. AI SUITE (Responsive Grid) */}
+                        {/* 2. AI SUITE & APPLICATION ACCELERATORS (Responsive Grid) */}
                         <div className="row g-2 mb-3">
-                            <div className="col-12 col-sm-6 col-md-3">
+                            <div className="col-12 col-sm-6 col-lg-3">
                                 <button
                                     type="button"
                                     onClick={handleAnalyzeAts}
@@ -280,7 +325,7 @@ export default function FinalReviewStep() {
                                 </button>
                             </div>
 
-                            <div className="col-12 col-sm-6 col-md-3">
+                            <div className="col-12 col-sm-6 col-lg-3">
                                 <button
                                     type="button"
                                     onClick={() => setShowJdModal(true)}
@@ -292,7 +337,7 @@ export default function FinalReviewStep() {
                                 </button>
                             </div>
 
-                            <div className="col-12 col-sm-6 col-md-3">
+                            <div className="col-12 col-sm-6 col-lg-3">
                                 <button
                                     type="button"
                                     onClick={() => setShowCoverModal(true)}
@@ -304,7 +349,7 @@ export default function FinalReviewStep() {
                                 </button>
                             </div>
 
-                            <div className="col-12 col-sm-6 col-md-3">
+                            <div className="col-12 col-sm-6 col-lg-3">
                                 <button
                                     type="button"
                                     onClick={() => setShowJobBoard(true)}
@@ -317,9 +362,9 @@ export default function FinalReviewStep() {
                             </div>
                         </div>
 
-                        {/* 3. PRIMARY ACTIONS */}
+                        {/* 3. PRIMARY ACTIONS & EXPORT (Clean 4-column balanced layout) */}
                         <div className="row g-2 pt-2 border-top border-secondary border-opacity-10">
-                            <div className="col-12 col-sm-6 ms-sm-auto col-md-4 col-lg-3">
+                            <div className="col-12 col-md-4">
                                 <button
                                     type="button"
                                     disabled={dbLoading}
@@ -330,7 +375,7 @@ export default function FinalReviewStep() {
                                     {dbLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-1"></span>
-                                            <span>Saving...</span>
+                                            <span>Saving to Cloud...</span>
                                         </>
                                     ) : (
                                         <>
@@ -341,7 +386,29 @@ export default function FinalReviewStep() {
                                 </button>
                             </div>
 
-                            <div className="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <div className="col-12 col-md-4">
+                                <button
+                                    type="button"
+                                    disabled={optimizingPage}
+                                    onClick={handleOptimizeOnePage}
+                                    className="btn btn-outline-success btn-sm py-2 w-100 fw-bold d-flex align-items-center justify-content-center gap-1.5"
+                                    style={{ borderRadius: '8px', fontSize: '0.82rem' }}
+                                >
+                                    {optimizingPage ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm text-success me-1"></span>
+                                            <span>Compressing Layout...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>📐</span>
+                                            <span>Optimize to 1 Page</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            <div className="col-12 col-md-4">
                                 <button
                                     type="button"
                                     onClick={handleDownloadPDF}
@@ -361,7 +428,7 @@ export default function FinalReviewStep() {
                             🎉 Review & Download
                         </h4>
                         <p className="text-white text-opacity-75 small mb-0 fw-medium">
-                            Name your resume, analyze ATS compliance, match target JDs, generate AI cover letters, and export PDF.
+                            Import existing PDF resumes, compress to a strict 1-page fit, audit ATS compliance, match target JDs, and download executive resumes.
                         </p>
                     </div>
 
@@ -537,7 +604,7 @@ export default function FinalReviewStep() {
                                     )}
                                 </button>
 
-                                {/* 🚀 Formatted Cover Letter Output Area */}
+                                {/* Formatted Cover Letter Output Area */}
                                 {coverLetterText && (
                                     <div className="p-3 border border-info border-opacity-30 rounded-3 bg-black bg-opacity-40 shadow-inner">
                                         <div className="d-flex flex-wrap justify-content-between align-items-center mb-2.5 pb-2 border-bottom border-secondary border-opacity-25 gap-2">

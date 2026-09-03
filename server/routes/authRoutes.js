@@ -1,4 +1,5 @@
 const express = require("express");
+const { authLimiter } = require('../middleware/rateLimiter');
 
 const {
     register,
@@ -14,9 +15,9 @@ const router = express.Router();
 
 router.post("/register", register);
 
-router.post("/verify-otp", verifyOTP);
+router.post("/verify-otp", authLimiter, verifyOTP);
 
-router.post("/login", login);
+router.post("/login", authLimiter, login);
 
 router.post("/forgot-password", forgotPassword);
 

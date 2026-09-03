@@ -10,7 +10,7 @@ const visitorSchema = new mongoose.Schema({
     hitCount: { type: Number, default: 1 }
 });
 
-// Suspicious Route / 404 Intrusion Log Schema
+// Suspicious Route / 404 / Brute-Force Intrusion Log Schema
 const suspiciousLogSchema = new mongoose.Schema({
     ip: { type: String, required: true },
     attemptedRoute: { type: String, required: true },
@@ -22,7 +22,16 @@ const suspiciousLogSchema = new mongoose.Schema({
     timestamp: { type: Date, default: Date.now }
 });
 
+// Firewall Blocked IP Schema (Permanent / Manual Ban)
+const blockedIpSchema = new mongoose.Schema({
+    ip: { type: String, required: true, unique: true },
+    reason: { type: String, default: 'Brute-force / Malicious route probing' },
+    blockedBy: { type: String, default: 'Admin' },
+    createdAt: { type: Date, default: Date.now }
+});
+
 const Visitor = mongoose.model('Visitor', visitorSchema);
 const SuspiciousLog = mongoose.model('SuspiciousLog', suspiciousLogSchema);
+const BlockedIp = mongoose.model('BlockedIp', blockedIpSchema);
 
-module.exports = { Visitor, SuspiciousLog };
+module.exports = { Visitor, SuspiciousLog, BlockedIp };

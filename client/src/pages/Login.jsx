@@ -63,9 +63,8 @@ function Login() {
                 }, 1000);
             }
         } catch (error) {
-            console.error("Login Error:", error);
             showToast(
-                error.response?.data?.message || "Login Failed. Please check your credentials.",
+                error.message || "Login Failed. Please check your credentials.",
                 "danger"
             );
         } finally {
@@ -90,11 +89,11 @@ function Login() {
                         <div className="login-card border-0 p-4 p-md-5">
 
                             <h1 className="text-center glow-title mb-2">
-                                Welcome Back
+                                Sign in <span>CV<span color="#38bdf8">Pilot</span></span>
                             </h1>
 
                             <p className="text-center text-white-50 small mb-4">
-                                Login to Continue 🚀
+                                Sign in to manage your resumes, live job matches & AI audits.
                             </p>
 
                             <form onSubmit={submitHandler}>

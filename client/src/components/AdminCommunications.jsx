@@ -249,7 +249,7 @@ export default function AdminCommunications({ users = [], suspiciousLogs = [], s
                                                 <tr key={m._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                                     <td className="py-2.5 px-3">
                                                         <div className="d-flex align-items-center gap-2">
-                                                            <div className="rounded-circle bg-info bg-opacity-20 text-info fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '28px', height: '28px', fontSize: '0.72rem' }}>
+                                                            <div className="rounded-circle bg-info bg-opacity-20 text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '28px', height: '28px', fontSize: '0.72rem' }}>
                                                                 {m.name?.charAt(0).toUpperCase() || 'U'}
                                                             </div>
                                                             <div>

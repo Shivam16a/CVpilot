@@ -31,6 +31,17 @@ const ResumePreview = forwardRef((props, ref) => {
     const safeText = renderSafeText;
     const safeArray = getSafeArray;
 
+    // 🎓 Safe Education Field Resolvers (Resolves all schema variations)
+    const getEduInstitute = (edu) => safeText(edu?.institute || edu?.institution || edu?.school || edu?.college || edu?.university);
+    const getEduScore = (edu) => safeText(edu?.score || edu?.percentage || edu?.cgpa || edu?.marks || edu?.grade);
+    const getEduYear = (edu) => {
+        const end = safeText(edu?.endDate || edu?.graduationYear || edu?.year);
+        const start = safeText(edu?.startDate);
+        if (start && end) return `${start} – ${edu?.isCurrent ? 'Present' : end}`;
+        if (end) return end;
+        return '';
+    };
+
     const renderExternalLink = (url, label, className = "text-primary fw-semibold text-decoration-none") => {
         if (!url) return null;
         const cleanUrl = safeText(url).trim();
@@ -99,7 +110,7 @@ const ResumePreview = forwardRef((props, ref) => {
                     color: '#111111'
                 }}
             >
-                {/* ==================== 0. DEFAULT STANDARD ATS LAYOUT (Strict text-only for parsing) ==================== */}
+                {/* ==================== 0. DEFAULT STANDARD ATS LAYOUT ==================== */}
                 {(!selectedTemplate || selectedTemplate === 'default' || selectedTemplate === 'template-ats') && (
                     <div className="p-4">
                         <div className="text-center mb-3">
@@ -167,20 +178,27 @@ const ResumePreview = forwardRef((props, ref) => {
                             </div>
                         )}
 
+                        {/* 🎓 FIXED EDUCATION SECTION (With Multi-Key Support) */}
                         {education && safeArray(education).length > 0 && (
                             <div className="mb-3">
                                 <h6 className="fw-bold text-uppercase border-bottom border-dark pb-1 mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>Education</h6>
-                                {safeArray(education).map((edu, index) => (
-                                    <div key={index} className="mb-1.5 d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <span className="fw-bold text-dark">{safeText(edu.degree)} {edu.course && `in ${safeText(edu.course)}`}</span> — <span className="text-secondary">{safeText(edu.institute)}</span>
+                                {safeArray(education).map((edu, index) => {
+                                    const inst = getEduInstitute(edu);
+                                    const score = getEduScore(edu);
+                                    const year = getEduYear(edu);
+                                    return (
+                                        <div key={index} className="mb-1.5 d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <span className="fw-bold text-dark">{safeText(edu.degree)} {edu.course && `in ${safeText(edu.course)}`}</span>
+                                                {inst && <span> — <span className="text-secondary">{inst}</span></span>}
+                                            </div>
+                                            <div className="text-end" style={{ fontSize: '10px' }}>
+                                                {score && <span className="fw-bold text-dark d-block">{score}</span>}
+                                                {year && <span className="text-muted">{year}</span>}
+                                            </div>
                                         </div>
-                                        <div className="text-end" style={{ fontSize: '10px' }}>
-                                            <span className="fw-bold text-dark">{safeText(edu.score)}</span> <br />
-                                            <span className="text-muted">{safeText(edu.startDate)} – {edu.isCurrent ? 'Present' : safeText(edu.endDate)}</span>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
 
@@ -205,10 +223,9 @@ const ResumePreview = forwardRef((props, ref) => {
                     </div>
                 )}
 
-                {/* ==================== TEMPLATE 1: MODERN SIDEBAR (With Profile Photo) ==================== */}
+                {/* ==================== TEMPLATE 1: MODERN SIDEBAR ==================== */}
                 {selectedTemplate === 'template-sidebar' && (
                     <div className="d-flex w-100" style={{ minHeight: '842px' }}>
-                        {/* Left Sidebar */}
                         <div className="p-3 text-white d-flex flex-column justify-content-between" style={{ width: '32%', background: '#2c3e50', fontSize: '10px' }}>
                             <div>
                                 <div className="text-center mb-3">
@@ -265,7 +282,6 @@ const ResumePreview = forwardRef((props, ref) => {
                             </div>
                         </div>
 
-                        {/* Right Content Area */}
                         <div className="p-4" style={{ width: '68%' }}>
                             <div className="mb-3">
                                 <h3 className="fw-bold text-uppercase m-0" style={{ color: '#2c3e50', fontSize: '20px' }}>{safeText(personalInfo?.fullName) || 'YOUR NAME'}</h3>
@@ -310,15 +326,25 @@ const ResumePreview = forwardRef((props, ref) => {
                                 </div>
                             )}
 
+                            {/* 🎓 Fixed Education in Sidebar */}
                             {education && safeArray(education).length > 0 && (
                                 <div className="mb-3">
                                     <h6 className="fw-bold text-uppercase border-bottom border-dark pb-1" style={{ fontSize: '11px' }}>Education</h6>
-                                    {safeArray(education).map((edu, i) => (
-                                        <div key={i} className="mb-1">
-                                            <div className="fw-bold">{safeText(edu.degree)} in {safeText(edu.course)} | {safeText(edu.institute)}</div>
-                                            <div className="text-muted">{safeText(edu.score)} — ({safeText(edu.startDate)} - {safeText(edu.endDate)})</div>
-                                        </div>
-                                    ))}
+                                    {safeArray(education).map((edu, i) => {
+                                        const inst = getEduInstitute(edu);
+                                        const score = getEduScore(edu);
+                                        const year = getEduYear(edu);
+                                        return (
+                                            <div key={i} className="mb-1">
+                                                <div className="fw-bold">
+                                                    {safeText(edu.degree)} {edu.course && `in ${safeText(edu.course)}`} {inst && `| ${inst}`}
+                                                </div>
+                                                <div className="text-muted">
+                                                    {score && `${score}`} {year && `(${year})`}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -386,15 +412,23 @@ const ResumePreview = forwardRef((props, ref) => {
                             </div>
                         )}
 
+                        {/* 🎓 Fixed Education in Corporate */}
                         {education && safeArray(education).length > 0 && (
                             <div className="mb-3">
                                 <h6 className="fw-bold text-uppercase border-bottom border-secondary pb-1" style={{ fontSize: '11px' }}>Education</h6>
-                                {safeArray(education).map((edu, i) => (
-                                    <div key={i} className="mb-1 d-flex justify-content-between">
-                                        <div><strong>{safeText(edu.degree)} in {safeText(edu.course)}</strong> — {safeText(edu.institute)}</div>
-                                        <div className="text-muted">{safeText(edu.score)}</div>
-                                    </div>
-                                ))}
+                                {safeArray(education).map((edu, i) => {
+                                    const inst = getEduInstitute(edu);
+                                    const score = getEduScore(edu);
+                                    return (
+                                        <div key={i} className="mb-1 d-flex justify-content-between">
+                                            <div>
+                                                <strong>{safeText(edu.degree)} {edu.course && `in ${safeText(edu.course)}`}</strong>
+                                                {inst && ` — ${inst}`}
+                                            </div>
+                                            <div className="text-muted">{score}</div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
 
@@ -417,7 +451,7 @@ const ResumePreview = forwardRef((props, ref) => {
                     </div>
                 )}
 
-                {/* ==================== TEMPLATE 3: EXECUTIVE GREY HEADER (With Profile Photo Banner) ==================== */}
+                {/* ==================== TEMPLATE 3: EXECUTIVE GREY HEADER ==================== */}
                 {selectedTemplate === 'template-header-banner' && (
                     <div>
                         <div className="p-4 d-flex justify-content-between align-items-center" style={{ background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
@@ -426,7 +460,6 @@ const ResumePreview = forwardRef((props, ref) => {
                                 <div className="text-primary fw-semibold">{safeText(personalInfo?.title) || 'PROFESSIONAL TITLE'}</div>
                             </div>
 
-                            {/* Executive Header Photo Avatar */}
                             {userAvatar && (
                                 <div className="rounded-3 overflow-hidden border border-secondary shadow-sm" style={{ width: '65px', height: '65px' }}>
                                     <img src={userAvatar} alt="Executive Headshot" className="w-100 h-100 object-fit-cover" />
@@ -487,14 +520,20 @@ const ResumePreview = forwardRef((props, ref) => {
                                 </div>
                             )}
 
+                            {/* 🎓 Fixed Education in Header Banner */}
                             {education && safeArray(education).length > 0 && (
                                 <div className="mb-3">
                                     <div className="bg-secondary text-white px-2 py-0.5 fw-bold text-uppercase mb-1" style={{ fontSize: '10px' }}>Education Details</div>
-                                    {safeArray(education).map((edu, i) => (
-                                        <div key={i} className="mb-1">
-                                            <strong>{safeText(edu.degree)} in {safeText(edu.course)}</strong> — {safeText(edu.institute)} ({safeText(edu.score)})
-                                        </div>
-                                    ))}
+                                    {safeArray(education).map((edu, i) => {
+                                        const inst = getEduInstitute(edu);
+                                        const score = getEduScore(edu);
+                                        return (
+                                            <div key={i} className="mb-1">
+                                                <strong>{safeText(edu.degree)} {edu.course && `in ${safeText(edu.course)}`}</strong>
+                                                {inst && ` — ${inst}`} {score && `(${score})`}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
 
@@ -574,6 +613,7 @@ const ResumePreview = forwardRef((props, ref) => {
                             </div>
                         )}
 
+                        {/* 🎓 Fixed Education in Academic Table */}
                         {education && safeArray(education).length > 0 && (
                             <div className="mb-3">
                                 <div className="bg-light p-1 fw-bold text-uppercase border-bottom border-top mb-2" style={{ fontSize: '10px' }}>Educational Qualifications:</div>
@@ -581,7 +621,7 @@ const ResumePreview = forwardRef((props, ref) => {
                                     <thead className="table-light">
                                         <tr>
                                             <th>Courses</th>
-                                            <th>University/Board</th>
+                                            <th>University/Board/Institute</th>
                                             <th>Passing Year</th>
                                             <th>Percentage/CGPA</th>
                                         </tr>
@@ -590,9 +630,9 @@ const ResumePreview = forwardRef((props, ref) => {
                                         {safeArray(education).map((edu, i) => (
                                             <tr key={i}>
                                                 <td>{safeText(edu.degree)}</td>
-                                                <td>{safeText(edu.institute)}</td>
-                                                <td>{safeText(edu.endDate) || '2024'}</td>
-                                                <td>{safeText(edu.score)}</td>
+                                                <td>{getEduInstitute(edu) || '—'}</td>
+                                                <td>{getEduYear(edu) || '—'}</td>
+                                                <td>{getEduScore(edu) || '—'}</td>
                                             </tr>
                                         ))}
                                     </tbody>

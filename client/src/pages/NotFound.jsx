@@ -1,5 +1,5 @@
 // client/src/pages/NotFound.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { reportSuspiciousRouteApi } from '../services/adminService';
 
@@ -7,7 +7,16 @@ export default function NotFound() {
     const navigate = useNavigate();
     const location = useLocation();
 
+    // 🛡️ StrictMode & Concurrent Mount Lock
+    const reportedRouteRef = useRef('');
+
     useEffect(() => {
+        // Agar yeh route path pehle hi report ho chuka hai, toh repeat request mat bhejo
+        if (reportedRouteRef.current === location.pathname) {
+            return;
+        }
+        reportedRouteRef.current = location.pathname;
+
         const reportAccess = async () => {
             try {
                 const storedUser = JSON.parse(localStorage.getItem('user') || '{}');

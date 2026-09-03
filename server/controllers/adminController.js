@@ -1,7 +1,21 @@
 // server/controllers/adminController.js
 const User = require('../models/users');
 const Resume = require('../models/resume');
-const { Visitor, SuspiciousLog } = require('../models/SecurityLog');
+const { Visitor, SuspiciousLog, BlockedIp } = require('../models/SecurityLog');
+const { refreshBlockedIpsCache } = require('../middleware/firewallMiddleware');
+
+// 🛡️ Microsecond-Level Memory Throttle Map (Prevents concurrent race-conditions)
+const recentIntrusionsCache = new Map();
+
+// Auto cleanup every 1 minute to prevent memory leak
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, timestamp] of recentIntrusionsCache.entries()) {
+        if (now - timestamp > 20000) {
+            recentIntrusionsCache.delete(key);
+        }
+    }
+}, 60000);
 
 // 1. GET ALL USERS (Admin Dashboard Data)
 const getAllUsers = async (req, res) => {
@@ -63,7 +77,7 @@ const toggleBlockUser = async (req, res) => {
     }
 };
 
-// 3. GET SYSTEM & SECURITY METRICS (Total Users, Resumes, Unique Devices & Suspicious Logs)
+// 3. GET SYSTEM & SECURITY METRICS
 const getAdminStats = async (req, res) => {
     try {
         const now = new Date();
@@ -74,19 +88,16 @@ const getAdminStats = async (req, res) => {
         const uniqueVisitors = await Visitor.countDocuments();
 
         // 🚀 1. Subscription Status Counters
-        // a) Free Trial Users (Trial plan & trial date in future)
         const freeTrialUsers = await User.countDocuments({
             'subscription.plan': 'TRIAL',
             'subscription.trialEndsAt': { $gte: now }
         });
 
-        // b) Upgraded Active Paid Users (Monthly or Yearly & date in future)
         const upgradedUsers = await User.countDocuments({
             'subscription.plan': { $in: ['PRO_MONTHLY', 'PRO_YEARLY'] },
             'subscription.currentPeriodEnd': { $gte: now }
         });
 
-        // c) Expired Users (Either trial ended or paid period ended)
         const expiredUsers = await User.countDocuments({
             $or: [
                 { 'subscription.plan': 'TRIAL', 'subscription.trialEndsAt': { $lt: now } },
@@ -95,7 +106,7 @@ const getAdminStats = async (req, res) => {
             ]
         });
 
-        // 🚀 2. Revenue Aggregation (Monthly Pro = ₹199, Yearly Pro = ₹1499)
+        // 🚀 2. Revenue Aggregation
         const paidUsersList = await User.find({
             'subscription.razorpayPaymentId': { $ne: null }
         }).select('subscription createdAt updatedAt');
@@ -106,7 +117,7 @@ const getAdminStats = async (req, res) => {
             else if (u.subscription?.plan === 'PRO_MONTHLY') totalRevenue += 199;
         });
 
-        // 🚀 3. Monthly Revenue Growth Data (Last 6 Months)
+        // 🚀 3. Monthly Revenue Growth Data
         const monthlyGrowth = [];
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -115,7 +126,6 @@ const getAdminStats = async (req, res) => {
             const nextD = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
             const mLabel = monthNames[d.getMonth()];
 
-            // Count users who upgraded in this calendar month
             const monthUsers = paidUsersList.filter(u => {
                 const subDate = new Date(u.updatedAt || u.createdAt);
                 return subDate >= d && subDate < nextD;
@@ -133,10 +143,11 @@ const getAdminStats = async (req, res) => {
                 conversions: monthUsers.length
             });
         }
+        const blockedIpsList = await BlockedIp.find().select('ip reason createdAt').lean();
 
         const suspiciousLogs = await SuspiciousLog.find()
             .sort({ timestamp: -1 })
-            .limit(35);
+            .limit(50);
 
         const templateAnalytics = await Resume.aggregate([
             { $group: { _id: "$template", count: { $sum: 1 } } }
@@ -149,7 +160,6 @@ const getAdminStats = async (req, res) => {
                 blockedUsers,
                 totalResumes,
                 uniqueVisitors,
-                // 🚀 Subscription & Revenue Metrics
                 totalRevenue,
                 freeTrialUsers,
                 upgradedUsers,
@@ -157,7 +167,8 @@ const getAdminStats = async (req, res) => {
             },
             monthlyGrowth,
             templateAnalytics,
-            suspiciousLogs
+            suspiciousLogs,
+            blockedIps: blockedIpsList
         });
     } catch (error) {
         console.error("Admin Stats Error:", error);
@@ -165,7 +176,7 @@ const getAdminStats = async (req, res) => {
     }
 };
 
-// 4. FETCH ALL USERS ALONG WITH THEIR CREATED RESUMES LIST
+// 4. FETCH ALL USERS ALONG WITH THEIR RESUMES
 const getAllUsersWithResumes = async (req, res) => {
     try {
         const users = await User.find().select('-password').lean();
@@ -187,7 +198,7 @@ const getAllUsersWithResumes = async (req, res) => {
     }
 };
 
-// 5. TOGGLE USER ADMIN ROLE (User -> Admin OR Admin -> User)
+// 5. TOGGLE USER ADMIN ROLE
 const toggleAdminRole = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -225,9 +236,13 @@ const toggleAdminRole = async (req, res) => {
     }
 };
 
-// 🚀 6. LOG SUSPICIOUS ROUTE ATTEMPT (Reported by Frontend 404 / Invalid URL Visit)
+// 🚀 6. LOG SUSPICIOUS ROUTE ATTEMPT (Bulletproof Atomic Lock & Memory Throttled)
 const logSuspiciousActivity = async (req, res) => {
     try {
+        if (req.method === 'OPTIONS') {
+            return res.status(200).json({ success: true, ignored: true });
+        }
+
         const { attemptedRoute, userId, username, email } = req.body;
 
         const rawIp = req.headers['x-forwarded-for']?.split(',')[0].trim() ||
@@ -235,24 +250,60 @@ const logSuspiciousActivity = async (req, res) => {
             req.ip ||
             '127.0.0.1';
         const cleanIp = rawIp.replace('::ffff:', '');
+        const targetRoute = (attemptedRoute || 'Unknown Route').trim();
+
+        // 🛡️ STEP 1: ZERO-MILLISECOND MEMORY LOCK (Stops concurrent burst requests)
+        const cacheSignature = `${cleanIp}_${targetRoute}`;
+        const now = Date.now();
+        const lastExecuted = recentIntrusionsCache.get(cacheSignature);
+
+        if (lastExecuted && (now - lastExecuted) < 15000) {
+            // 15 seconds ke andar same IP & route dubara aayi toh turant drop karo
+            return res.status(200).json({
+                success: true,
+                deduplicated: true,
+                message: "Duplicate burst request suppressed by memory guard."
+            });
+        }
+
+        // Lock register karein
+        recentIntrusionsCache.set(cacheSignature, now);
+
         const userAgent = req.headers['user-agent'] || 'Unknown Device';
 
-        // Severity evaluation
         let severity = 'MEDIUM';
         const dangerousPatterns = ['admin', 'config', '.env', 'eval', 'wp-', 'backup', 'root', 'api/v'];
-        if (dangerousPatterns.some(term => attemptedRoute?.toLowerCase().includes(term))) {
+        if (dangerousPatterns.some(term => targetRoute.toLowerCase().includes(term))) {
             severity = 'HIGH';
         }
 
-        const logEntry = await SuspiciousLog.create({
-            ip: cleanIp,
-            attemptedRoute: attemptedRoute || 'Unknown Route',
-            userId: userId || null,
-            username: username || 'Guest Visitor',
-            email: email || 'Unauthenticated',
-            userAgent,
-            severity
-        });
+        // 🛡️ STEP 2: ATOMIC UPSERT (Database Engine Level Concurrency Protection)
+        const fifteenSecAgo = new Date(Date.now() - 15 * 1000);
+
+        const logEntry = await SuspiciousLog.findOneAndUpdate(
+            {
+                ip: cleanIp,
+                attemptedRoute: targetRoute,
+                timestamp: { $gte: fifteenSecAgo }
+            },
+            {
+                $set: {
+                    ip: cleanIp,
+                    attemptedRoute: targetRoute,
+                    userId: userId || null,
+                    username: username || 'Anonymous Guest',
+                    email: email || 'Unauthenticated',
+                    userAgent,
+                    severity,
+                    timestamp: new Date()
+                }
+            },
+            {
+                upsert: true,
+                new: true,
+                setDefaultsOnInsert: true
+            }
+        );
 
         return res.status(201).json({ success: true, log: logEntry });
     } catch (error) {
@@ -261,11 +312,56 @@ const logSuspiciousActivity = async (req, res) => {
     }
 };
 
+
+// 🚀 7. TOGGLE FIREWALL IP BLOCK / UNBLOCK
+const toggleIpBlock = async (req, res) => {
+    try {
+        const { ip, reason } = req.body;
+        if (!ip) {
+            return res.status(400).json({ success: false, message: "Valid IP address required." });
+        }
+
+        const existing = await BlockedIp.findOne({ ip });
+
+        if (existing) {
+            await BlockedIp.deleteOne({ ip });
+            await refreshBlockedIpsCache();
+            return res.status(200).json({
+                success: true,
+                isBlocked: false,
+                message: `IP ${ip} has been removed from the Firewall Blacklist. ✅`
+            });
+        }
+
+        await BlockedIp.create({
+            ip,
+            reason: reason || 'Manual Admin Quarantine',
+            blockedBy: req.user?.username || 'Admin'
+        });
+        await refreshBlockedIpsCache();
+
+        return res.status(200).json({
+            success: true,
+            isBlocked: true,
+            message: `IP ${ip} is now PERMANENTLY BLOCKED by Firewall! 🚫`
+        });
+    } catch (error) {
+        console.error("IP Block Toggle Error:", error);
+        return res.status(500).json({ success: false, message: "Operation failed: " + error.message });
+    }
+};
+
+// getAdminStats ke andar blockedIPs array bhi bhej dein:
+// getAdminStats me:
+
+// res.json me pass karein: blockedIps: blockedIpsList
+
 module.exports = {
     getAllUsers,
     toggleBlockUser,
     getAdminStats,
     toggleAdminRole,
     getAllUsersWithResumes,
-    logSuspiciousActivity // 🚀 Exported
+    logSuspiciousActivity,
+    toggleIpBlock
 };

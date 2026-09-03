@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import BrandLogo from './BrandLogo';
 
 const DashboardLayout = ({ children, title, subtitle }) => {
     const navigate = useNavigate();
@@ -50,18 +51,8 @@ const DashboardLayout = ({ children, title, subtitle }) => {
 
                         {/* Top Branding & Workspace Status */}
                         <div>
-                            <div
-                                onClick={() => navigate('/')}
-                                className="d-inline-flex align-items-center gap-2 mb-3 cursor-pointer"
-                                style={{ cursor: 'pointer' }}
-                            >
-                                <span className="p-1.5 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-25 text-info d-flex align-items-center justify-content-center">
-                                    ⚡
-                                </span>
-                                <h3 className="fw-extrabold tracking-wider text-white m-0" style={{ letterSpacing: '0.5px' }}>
-                                    CV<span className="text-info">Pilot</span>
-                                </h3>
-                            </div>
+                            {/* Brand Logo */}
+                            <BrandLogo size={50} showText={true} />
 
                             <div className="d-flex align-items-center gap-2">
                                 <span className="badge bg-dark border border-secondary border-opacity-30 text-white-50 py-1 px-2 rounded-pill font-monospace" style={{ fontSize: '0.7rem' }}>

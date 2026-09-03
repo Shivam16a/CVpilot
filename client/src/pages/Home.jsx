@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Toast from '../components/Toast';
+import BrandLogo from '../components/BrandLogo';
 
 export default function Home() {
     const navigate = useNavigate();
@@ -81,7 +82,7 @@ export default function Home() {
                             </p>
 
                             <div className="d-flex flex-wrap align-items-center gap-3">
-                                
+
                                 <button
                                     onClick={() => navigate('/upgrade-plan')}
                                     className="btn btn-warning text-dark fw-bold px-4 py-3 fs-6 rounded-3 shadow-sm d-flex align-items-center gap-2"
@@ -418,12 +419,8 @@ export default function Home() {
                 <div className="container">
                     <div className="row g-4 justify-content-between text-start mb-5">
                         <div className="col-12 col-lg-4">
-                            <div className="d-flex align-items-center gap-2 mb-3 cursor-pointer" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-                                <span className="p-1.5 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-25 text-info fw-bold">⚡</span>
-                                <h4 className="fw-extrabold text-white m-0 tracking-wider">
-                                    CV<span className="text-info">Pilot</span>
-                                </h4>
-                            </div>
+                            {/* Brand Logo */}
+                            <BrandLogo size={50} showText={true} />
                             <p className="text-white-50 small mb-3" style={{ lineHeight: '1.7', maxWidth: '320px' }}>
                                 The intelligent ATS-proof resume builder designed for developers, designers, and tech leaders. Built-in Gemini AI scoring, JD matcher, and tailored application generation.
                             </p>

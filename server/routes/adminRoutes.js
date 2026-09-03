@@ -7,12 +7,14 @@ const {
     getAdminStats,
     toggleAdminRole,
     getAllUsersWithResumes,
-    logSuspiciousActivity // 🚀 Import
+    logSuspiciousActivity,
+    toggleIpBlock
 } = require('../controllers/adminController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
 // 🚀 Public Honey-Pot Endpoint: Frontend 404 can report without authentication
 router.post('/report-suspicious-route', logSuspiciousActivity);
+router.post('/toggle-ip-block', protect, toggleIpBlock);
 
 // Protected Admin Routes
 router.get('/stats', protect, adminOnly, getAdminStats);

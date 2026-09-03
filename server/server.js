@@ -16,21 +16,43 @@ const adminRoutes = require("./routes/adminRoutes");
 const jobRoutes = require('./routes/jobRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const contactRoutes = require('./routes/contactRoutes');
+const { firewallShield, refreshBlockedIpsCache } = require('./middleware/firewallMiddleware');
 
 dotenv.config();
 const app = express();
 
-// 1. FIXED: Set trust proxy to 1 (1 hop behind reverse-proxy / local)
+// 1. Trust Proxy Setup (Reverse-proxies jaise Vercel/Render/Nginx ke liye zaroori)
 app.set('trust proxy', 1);
 
 // 2. Helmet Security Headers
 app.use(helmet());
 
+// 3. Dynamic CORS Configuration (Fixed wildcard + credentials conflict)
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    process.env.CLIENT_URL // Live frontend domain (e.g. https://cvpilot.vercel.app)
+].filter(Boolean);
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Blocked by CORS policy'));
+        }
+    },
+    credentials: true
+}));
+
+// 4. Firewall Shield (Early check)
+app.use(firewallShield);
+
 // Body Parsing Setup
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
-// 3. NoSQL Query Injection Protection
+// 5. NoSQL Query Injection Protection
 app.use((req, res, next) => {
     if (req.body) {
         req.body = mongoSanitize.sanitize(req.body, { replaceWith: '_' });
@@ -41,48 +63,44 @@ app.use((req, res, next) => {
     next();
 });
 
-// CORS Setup
-app.use(cors({
-    origin: "*",
-    credentials: true
-}));
-
-// 🚀 4. UNIQUE DEVICE & IP TRAFFIC TRACKER (Mongoose warning fixed)
-app.use(async (req, res, next) => {
+// 🚀 6. UNIQUE DEVICE TRACKER (Sirf API calls par track hoga, static files par DB burden nahi banega)
+app.use('/api', async (req, res, next) => {
     try {
-        const rawIp = req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-            req.socket?.remoteAddress ||
-            req.ip ||
-            '127.0.0.1';
+        if (req.method !== 'OPTIONS') {
+            const rawIp = req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+                req.socket?.remoteAddress ||
+                req.ip ||
+                '127.0.0.1';
 
-        const cleanIp = rawIp.replace('::ffff:', '');
-        const userAgent = req.headers['user-agent'] || 'Unknown Device';
+            const cleanIp = rawIp.replace('::ffff:', '');
+            const userAgent = req.headers['user-agent'] || 'Unknown Device';
 
-        // FIXED: replaced { new: true } with { returnDocument: 'after' }
-        await Visitor.findOneAndUpdate(
-            { ip: cleanIp },
-            {
-                $set: { userAgent, lastVisit: new Date() },
-                $inc: { hitCount: 1 }
-            },
-            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
-        );
+            // Non-blocking asynchronous update
+            Visitor.findOneAndUpdate(
+                { ip: cleanIp },
+                {
+                    $set: { userAgent, lastVisit: new Date() },
+                    $inc: { hitCount: 1 }
+                },
+                { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+            ).catch(() => { }); // Silent catch taaki API slow na ho
+        }
     } catch (error) {
-        // Non-blocking background log
+        // Non-blocking
     }
     next();
 });
 
-// 🚀 5. Rate Limiting Setup (with validate config to suppress permissive proxy validation crash)
+// 🚀 7. Rate Limiting Setup
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
-    validate: { trustProxy: false }, // Disables express-rate-limit strict validation warning
+    validate: { trustProxy: false },
     message: { success: false, message: "Too many requests from this IP, please try again after 15 minutes." }
 });
 app.use("/api/", globalLimiter);
 
-// Auth Rate Limiter
+// Auth Specific Rate Limiter
 const authLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 15,
@@ -91,22 +109,65 @@ const authLimiter = rateLimit({
 });
 app.use("/api/auth/login", authLimiter);
 
-// API Routes Endpoint Mounts
-app.use('/api/jobs', jobRoutes);
-app.use("/api/auth", authroute);
-app.use("/api/resume", resumeroute);
-app.use("/api/ai", aiRoutes);
-app.use("/api/admin", adminRoutes);
-app.use('/api/payment', paymentRoutes);
-app.use('/api/contact', contactRoutes);
+// server/server.js
+
+// ==========================================
+// 🚀 DUAL COMPATIBILITY API ROUTES MOUNT
+// (Handles both with /api and without /api seamlessly)
+// ==========================================
+
+const mountAppRoutes = (prefix = '/api') => {
+    app.use(`${prefix}/jobs`, jobRoutes);
+    app.use(`${prefix}/auth`, authroute);
+    app.use(`${prefix}/resume`, resumeroute);
+    app.use(`${prefix}/ai`, aiRoutes);
+    app.use(`${prefix}/admin`, adminRoutes);
+    app.use(`${prefix}/payment`, paymentRoutes);
+    app.use(`${prefix}/contact`, contactRoutes);
+};
+
+// 1. Primary standard routes (/api/admin, /api/contact, etc.)
+mountAppRoutes('/api');
+
+// 2. Fallback direct routes (/admin, /contact, /resume, etc. agar frontend se /api miss ho jaye)
+mountAppRoutes('');
+
+// 🛡️ 8. UNKNOWN API ROUTE QUARANTINE (API 404 Handler)
+app.use('/api', (req, res) => {
+    res.status(404).json({
+        success: false,
+        message: "Requested API endpoint is restricted or does not exist."
+    });
+});
+
+// 🛡️ 9. GLOBAL EXCEPTION SHIELD (Prevents Stack Trace & Database Leaks)
+app.use((err, req, res, next) => {
+    if (process.env.NODE_ENV !== 'production') {
+        console.error("Internal Server Error:", err.message);
+    }
+
+    const statusCode = err.statusCode || err.status || 500;
+
+    return res.status(statusCode).json({
+        success: false,
+        message: statusCode === 500
+            ? "A secure internal server error occurred. Please try again later."
+            : err.message
+    });
+});
 
 const PORT = process.env.PORT || 6050;
 
-// Database Connection & Server Listener
-connectDb().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Server is running securely on port :${PORT}`);
+// 🚀 Database Connection & Safe Firewall Cache Initialization
+connectDb()
+    .then(async () => {
+        // Database connect hone ke baad hi firewall cache initialize karein
+        await refreshBlockedIpsCache();
+
+        app.listen(PORT, () => {
+            console.log(`Server is running securely on port :${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error("Database Connection Failed:", err.message);
     });
-}).catch((err) => {
-    console.error("Database Connection Failed:", err);
-});

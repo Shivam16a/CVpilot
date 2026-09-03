@@ -21,8 +21,10 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.2",
+    "multer": "^2.3.0",
     "nodemailer": "^8.0.10",
     "nodemon": "^3.1.14",
+    "pdf-parse": "^2.4.5",
     "razorpay": "^2.9.8"
   }
 }

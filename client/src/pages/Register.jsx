@@ -73,7 +73,7 @@ function Register() {
                             </h1>
 
                             <p className="text-center text-white-50 small mb-4">
-                                Join the Future 🚀
+                                Enter your credentials to access your career copilot workspace.
                             </p>
 
                             {alertMessage.show && (

@@ -66,3 +66,13 @@ export const reportSuspiciousRouteApi = async (payload) => {
         return { success: false };
     }
 };
+
+// client/src/services/adminService.js
+export const toggleIpBlockApi = async (ip, reason) => {
+    const token = localStorage.getItem('token');
+    const res = await axios.post(`${API_BASE_URL}/toggle-ip-block`,
+        { ip, reason },
+        { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return res.data;
+};

@@ -294,9 +294,9 @@ const generateCoverLetter = async (req, res) => {
         const { resumeData, jobTitle, companyName, jobDescription } = req.body;
 
         if (!resumeData || !resumeData.personalInfo) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Resume data with personalInfo is required." 
+            return res.status(400).json({
+                success: false,
+                message: "Resume data with personalInfo is required."
             });
         }
 
@@ -313,7 +313,7 @@ const generateCoverLetter = async (req, res) => {
         const experienceHighlights = (resumeData.experience || [])
             .slice(0, 3)
             .map((exp, idx) => {
-                const responsibilities = Array.isArray(exp.responsibilities) 
+                const responsibilities = Array.isArray(exp.responsibilities)
                     ? exp.responsibilities.slice(0, 2).join('; ')
                     : String(exp.responsibilities || '').slice(0, 160);
                 return `${idx + 1}. ${exp.role || 'Developer'} at ${exp.company || 'Tech Firm'}: ${responsibilities}`;
@@ -432,5 +432,6 @@ module.exports = {
     analyzeAtsScore,
     matchJobDescription,
     generateCoverLetter,
-    handleChatAgent
+    handleChatAgent,
+    callGeminiAPI
 };
