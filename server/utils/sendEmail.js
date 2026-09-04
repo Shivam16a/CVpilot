@@ -1,21 +1,8 @@
 // server/utils/sendEmail.js
-const nodemailer = require("nodemailer");
+const axios = require('axios');
 
 const sendEmail = async (email, otp) => {
-    const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
-        port: Number(process.env.EMAIL_PORT) || 587,
-        secure: false, // 587 uses STARTTLS
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        },
-        tls: {
-            rejectUnauthorized: false
-        }
-    });
-
-    const sender = process.env.SENDER_EMAIL || process.env.EMAIL_USER;
+    const senderEmail = process.env.SENDER_EMAIL || "support@cvpilot.in";
 
     const otpHtml = `
     <!DOCTYPE html>
@@ -35,11 +22,9 @@ const sendEmail = async (email, otp) => {
                             <td style="padding: 32px 30px; text-align: center;">
                                 <h2 style="margin: 0 0 10px; color: #ffffff; font-size: 20px;">Email Verification Code</h2>
                                 <p style="margin: 0 0 24px; color: #94a3b8; font-size: 14px;">Use the verification code below to authorize your CVPilot account.</p>
-                                
                                 <div style="display: inline-block; background-color: #1e293b; border: 1px solid #38bdf8; border-radius: 12px; padding: 14px 36px; margin-bottom: 24px;">
                                     <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #38bdf8; font-family: monospace;">${otp}</span>
                                 </div>
-                                
                                 <p style="margin: 0; color: #64748b; font-size: 12px;">Valid for <strong>5 minutes</strong>. If you did not request this, please ignore.</p>
                             </td>
                         </tr>
@@ -56,12 +41,27 @@ const sendEmail = async (email, otp) => {
     </html>
     `;
 
-    return transporter.sendMail({
-        from: `"CVPilot Verification" <${sender}>`,
-        to: email,
-        subject: "CVPilot Verification Code",
-        html: otpHtml,
-    });
+    try {
+        const response = await axios.post(
+            'https://api.brevo.com/v3/smtp/email',
+            {
+                sender: { name: "CVPilot Verification", email: senderEmail },
+                to: [{ email }],
+                subject: "CVPilot Verification Code",
+                htmlContent: otpHtml
+            },
+            {
+                headers: {
+                    'api-key': process.env.BREVO_API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Brevo API Email Error:", error.response?.data || error.message);
+        throw new Error(error.response?.data?.message || "Failed to send verification email");
+    }
 };
 
 module.exports = sendEmail;
