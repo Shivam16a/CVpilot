@@ -1,0 +1,32 @@
+name: Keep-Alive Server & Database Ping
+
+on:
+  schedule:
+  # ⚡ Runs every 14 minutes (Render sleeps after 15 mins of inactivity)
+  - cron: '30 6 * * *'
+  workflow_dispatch:
+    # Manual trigger support from GitHub Actions UI
+
+jobs:
+  ping-server:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Ping Backend Health Check Endpoint
+      run: |
+        BACKEND_URL="${{ secrets.LIVE_BACKEND_URL }}"
+        if [ -z "$BACKEND_URL" ]; then
+          echo "❌ LIVE_BACKEND_URL secret is not configured in GitHub Secrets!"
+          exit 1
+        fi
+
+        # Remove trailing slash if user added it in secrets
+        CLEAN_URL=$(echo "$BACKEND_URL" | sed 's:/*$::')
+
+        echo "⚡ Sending scheduled heartbeat to $CLEAN_URL/health ..."
+        HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$CLEAN_URL/health")
+
+        if [ "$HTTP_RESPONSE" -eq 200 ]; then
+          echo "✅ Heartbeat Success: Status 200 OK (Server & DB Active)"
+        else
+          echo "⚠️ Heartbeat Response: HTTP Status $HTTP_RESPONSE"
+        fi
