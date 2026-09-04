@@ -1,18 +1,16 @@
 import { useState, useRef } from "react";
 import axios from "axios";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://cvpilot-n525.onrender.com";
 
 function VerifyOtp() {
     const navigate = useNavigate();
-    const location = useLocation();
 
-    // 🚀 React Router State se email extract karein (Register page se jo pass hua)
-    const passedEmail = location.state?.email || "";
+    // 🚀 localStorage se directly email retrieve karein
+    const email = localStorage.getItem("email") || "";
 
-    const [email, setEmail] = useState(passedEmail);
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [loading, setLoading] = useState(false);
     const [alertMsg, setAlertMsg] = useState({ type: "", text: "" });
@@ -50,8 +48,8 @@ function VerifyOtp() {
         e.preventDefault();
         const finalOtp = otp.join("");
 
-        if (!email.trim()) {
-            setAlertMsg({ type: "danger", text: "Registered email address is required." });
+        if (!email) {
+            setAlertMsg({ type: "danger", text: "Session expired or email missing. Please register again." });
             return;
         }
 
@@ -70,6 +68,9 @@ function VerifyOtp() {
             });
 
             setAlertMsg({ type: "success", text: res.data.message || "OTP verified! Redirecting to login..." });
+
+            // Cleanup email from localStorage post successful verification
+            localStorage.removeItem("email");
 
             setTimeout(() => {
                 navigate("/login");
@@ -100,17 +101,12 @@ function VerifyOtp() {
                                 Verify Account
                             </h2>
 
-                            {/* Agar state se email aaya hai toh text dikhao, warna input field */}
-                            {passedEmail ? (
-                                <p className="auth-subtitle text-secondary small mb-4">
-                                    Enter the 6-digit verification code sent to<br />
-                                    <span className="text-info fw-medium text-break">{passedEmail}</span>
-                                </p>
-                            ) : (
-                                <p className="auth-subtitle text-secondary small mb-3">
-                                    Enter your registered email and the 6-digit OTP dispatched to you.
-                                </p>
-                            )}
+                            <p className="auth-subtitle text-secondary small mb-4">
+                                Enter the 6-digit verification code sent to<br />
+                                <span className="text-info fw-medium text-break">
+                                    {email || "your registered email address"}
+                                </span>
+                            </p>
 
                             {alertMsg.text && (
                                 <div className={`alert alert-${alertMsg.type} py-2 px-3 small text-center mb-3`} role="alert">
@@ -119,22 +115,7 @@ function VerifyOtp() {
                             )}
 
                             <form onSubmit={submitHandler}>
-                                {/* Fallback email input agar direct route open hua ho */}
-                                {!passedEmail && (
-                                    <div className="mb-3 text-start">
-                                        <label className="text-secondary small mb-1">Registered Email</label>
-                                        <input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="name@example.com"
-                                            className="form-control form-control-dark"
-                                            required
-                                        />
-                                    </div>
-                                )}
-
-                                {/* OTP Inputs */}
+                                {/* OTP Digit Inputs */}
                                 <div className="d-flex justify-content-center gap-2 mb-4" onPaste={handlePaste}>
                                     {otp.map((digit, index) => (
                                         <input
