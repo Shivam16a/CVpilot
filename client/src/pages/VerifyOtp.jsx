@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import { FaArrowLeft, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
+import BrandLogo from "../components/BrandLogo";
 
-// Production fallback URL
+// Production backend fallback URL
 const API_URL = import.meta.env.VITE_API_URL || "https://cvpilot-n525.onrender.com";
 
 function VerifyOtp() {
@@ -26,7 +26,7 @@ function VerifyOtp() {
         return () => clearInterval(interval);
     }, [timer]);
 
-    // Handle single digit input & auto focus next
+    // Handle digit input & auto-focus next
     const handleChange = (e, index) => {
         const val = e.target.value;
         if (!/^\d*$/.test(val)) return;
@@ -64,7 +64,7 @@ function VerifyOtp() {
         const finalOtp = otp.join("");
 
         if (finalOtp.length < 6) {
-            setAlertMsg({ type: "danger", text: "Please enter all 6 digits of the verification code." });
+            setAlertMsg({ type: "danger", text: "Please enter all 6 digits." });
             return;
         }
 
@@ -77,11 +77,11 @@ function VerifyOtp() {
                 otp: finalOtp,
             });
 
-            setAlertMsg({ type: "success", text: res.data.message || "OTP verified successfully! Redirecting to login..." });
+            setAlertMsg({ type: "success", text: res.data.message || "OTP verified! Redirecting to login..." });
 
             setTimeout(() => {
                 navigate("/login");
-            }, 1500);
+            }, 1200);
         } catch (error) {
             setAlertMsg({
                 type: "danger",
@@ -101,12 +101,12 @@ function VerifyOtp() {
 
             await axios.post(`${API_URL}/api/auth/resend-otp`, { email });
 
-            setAlertMsg({ type: "success", text: "A fresh verification code has been sent to your email." });
+            setAlertMsg({ type: "success", text: "New OTP sent to your email." });
             setTimer(60);
         } catch (error) {
             setAlertMsg({
                 type: "danger",
-                text: error.response?.data?.message || "Failed to resend verification code. Please try again."
+                text: error.response?.data?.message || "Failed to resend code."
             });
         } finally {
             setResending(false);
@@ -114,47 +114,38 @@ function VerifyOtp() {
     };
 
     return (
-        <div className="auth-container d-flex justify-content-center align-items-center py-5">
+        <div className="auth-container d-flex justify-content-center align-items-center min-vh-100 py-4">
             <div className="container">
                 <div className="row justify-content-center">
                     <div className="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
 
-                        <div className="auth-card border-0 shadow-lg text-center p-4 p-md-5">
+                        {/* Identical Login Page Dark Card */}
+                        <div className="auth-card border-0 shadow-lg p-4 p-md-5 text-center">
 
-                            {/* CVPilot Brand Logo */}
-                            <div className="d-flex justify-content-center align-items-center mb-3">
-                                <Link to="/" className="text-decoration-none d-flex align-items-center gap-2">
-                                    <div className="brand-logo-icon">
-                                        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <rect width="34" height="34" rx="9" fill="#0284c7" fillOpacity="0.15" />
-                                            <path d="M11 9H23V25H11V9Z" stroke="#38bdf8" strokeWidth="2" strokeLinejoin="round" />
-                                            <path d="M15 14H19M15 18H19M15 22H17" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
-                                            <circle cx="21" cy="11" r="2" fill="#38bdf8" />
-                                        </svg>
-                                    </div>
-                                    <span className="brand-text fs-4 fw-bold text-white">
-                                        CV<span className="text-primary-accent">Pilot</span>
-                                    </span>
-                                </Link>
+                            {/* Reusable Brand Logo */}
+                            <div className="d-flex justify-content-center mb-3">
+                                <BrandLogo size={50} showText={true} />
                             </div>
 
-                            <h3 className="fw-bold text-white mb-2">Verify Account</h3>
-                            <p className="text-muted small mb-4">
-                                Enter the 6-digit security code dispatched to<br />
-                                <span className="text-info fw-semibold text-break">{email}</span>
+                            <h2 className="auth-title fw-bold text-white mb-2">
+                                Verify Account
+                            </h2>
+
+                            <p className="auth-subtitle text-secondary small mb-4">
+                                Enter the 6-digit verification code sent to<br />
+                                <span className="text-info fw-medium">{email}</span>
                             </p>
 
-                            {/* Status Alert Banner */}
+                            {/* Status Alert */}
                             {alertMsg.text && (
-                                <div className={`alert alert-${alertMsg.type} d-flex align-items-center justify-content-center gap-2 py-2 px-3 small mb-4`} role="alert">
-                                    {alertMsg.type === "success" ? <FaCheckCircle /> : <FaExclamationTriangle />}
-                                    <span>{alertMsg.text}</span>
+                                <div className={`alert alert-${alertMsg.type} py-2 px-3 small text-center mb-3`} role="alert">
+                                    {alertMsg.text}
                                 </div>
                             )}
 
-                            {/* 6-Digit OTP Form */}
+                            {/* 6-Digit OTP Box Grid */}
                             <form onSubmit={submitHandler}>
-                                <div className="otp-input-group d-flex justify-content-center gap-2 mb-4" onPaste={handlePaste}>
+                                <div className="d-flex justify-content-center gap-2 mb-4" onPaste={handlePaste}>
                                     {otp.map((digit, index) => (
                                         <input
                                             key={index}
@@ -166,14 +157,16 @@ function VerifyOtp() {
                                             onChange={(e) => handleChange(e, index)}
                                             onKeyDown={(e) => handleKeyDown(e, index)}
                                             autoFocus={index === 0}
-                                            className="form-control otp-box text-center fw-bold"
+                                            className="form-control form-control-dark text-center fw-bold fs-5 px-0"
+                                            style={{ width: "45px", height: "52px" }}
                                         />
                                     ))}
                                 </div>
 
+                                {/* Login-Styled Action Button */}
                                 <button
                                     type="submit"
-                                    className="btn btn-primary w-100 py-2 fw-bold text-dark d-flex align-items-center justify-content-center gap-2 mb-3"
+                                    className="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2 mb-3"
                                     disabled={loading}
                                 >
                                     {loading ? (
@@ -182,35 +175,33 @@ function VerifyOtp() {
                                             <span>Verifying...</span>
                                         </>
                                     ) : (
-                                        <span>Verify & Complete Registration</span>
+                                        <span>Verify OTP</span>
                                     )}
                                 </button>
                             </form>
 
-                            {/* Resend Section */}
-                            <div className="pt-3 border-top border-secondary border-opacity-25 mt-3">
-                                <p className="text-muted small mb-1">Didn't receive the code?</p>
+                            {/* Resend & Return Links */}
+                            <div className="mt-3">
+                                <p className="text-secondary small mb-1">Didn't receive the code?</p>
                                 {timer > 0 ? (
-                                    <span className="text-secondary small">
-                                        Resend code in <strong className="text-info">{timer}s</strong>
+                                    <span className="text-muted small">
+                                        Resend in <strong className="text-info">{timer}s</strong>
                                     </span>
                                 ) : (
                                     <button
                                         type="button"
                                         onClick={handleResend}
                                         disabled={resending}
-                                        className="btn btn-link text-decoration-none text-info p-0 small fw-semibold"
+                                        className="btn btn-link text-info text-decoration-none p-0 small fw-semibold"
                                     >
-                                        {resending ? "Dispatching code..." : "Resend Security Code"}
+                                        {resending ? "Sending..." : "Resend OTP"}
                                     </button>
                                 )}
                             </div>
 
-                            {/* Back Navigation */}
-                            <div className="mt-3">
-                                <Link to="/register" className="text-decoration-none text-muted small d-inline-flex align-items-center gap-1">
-                                    <FaArrowLeft size={11} />
-                                    <span>Back to Register</span>
+                            <div className="mt-3 pt-3 border-top border-secondary border-opacity-25">
+                                <Link to="/login" className="text-decoration-none text-secondary small">
+                                    Already verified? <span className="text-info fw-semibold">Sign In</span>
                                 </Link>
                             </div>
 
