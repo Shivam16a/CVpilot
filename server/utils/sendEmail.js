@@ -3,18 +3,19 @@ const nodemailer = require("nodemailer");
 
 const sendEmail = async (email, otp) => {
     const transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 2525,
-        secure: false,
-        family: 4, // 🚀 Prevents ENETUNREACH on cloud environments
+        host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
+        port: Number(process.env.EMAIL_PORT) || 587,
+        secure: false, // 587 uses STARTTLS
         auth: {
-            user: process.env.EMAIL,
-            pass: process.env.EMAIL_PASSWORD,
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
         },
         tls: {
             rejectUnauthorized: false
         }
     });
+
+    const sender = process.env.SENDER_EMAIL || process.env.EMAIL_USER;
 
     const otpHtml = `
     <!DOCTYPE html>
@@ -39,7 +40,7 @@ const sendEmail = async (email, otp) => {
                                     <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #38bdf8; font-family: monospace;">${otp}</span>
                                 </div>
                                 
-                                <p style="margin: 0; color: #64748b; font-size: 12px;">This code is strictly valid for <strong>5 minutes</strong>. If you did not request this code, ignore this email.</p>
+                                <p style="margin: 0; color: #64748b; font-size: 12px;">Valid for <strong>5 minutes</strong>. If you did not request this, please ignore.</p>
                             </td>
                         </tr>
                         <tr>
@@ -56,7 +57,7 @@ const sendEmail = async (email, otp) => {
     `;
 
     return transporter.sendMail({
-        from: `"CVPilot Verification" <${process.env.EMAIL}>`,
+        from: `"CVPilot Verification" <${sender}>`,
         to: email,
         subject: "CVPilot Verification Code",
         html: otpHtml,

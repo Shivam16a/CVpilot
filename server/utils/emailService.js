@@ -3,13 +3,12 @@ const nodemailer = require('nodemailer');
 
 const getTransporter = () => {
     return nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 2525,
-        secure: false, // 587 uses STARTTLS
-        family: 4,     // 🚀 Force IPv4 to prevent Render ENETUNREACH crash
+        host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
+        port: Number(process.env.EMAIL_PORT) || 587,
+        secure: false, // Port 587 uses STARTTLS
         auth: {
-            user: process.env.EMAIL,
-            pass: process.env.EMAIL_PASSWORD
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
         },
         tls: {
             rejectUnauthorized: false
@@ -194,8 +193,10 @@ const AUTOMATED_TEMPLATES = {
 
 const sendMail = async ({ to, subject, html }) => {
     const transporter = getTransporter();
+    const sender = process.env.SENDER_EMAIL || process.env.EMAIL_USER;
+
     return transporter.sendMail({
-        from: `"CVPilot Security" <${process.env.EMAIL}>`,
+        from: `"CVPilot Sentinel" <${sender}>`,
         to,
         subject,
         html
