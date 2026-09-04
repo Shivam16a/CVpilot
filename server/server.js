@@ -136,9 +136,37 @@ mountAppRoutes('/api');
 // Fallback direct routes (/admin, /resume, etc.)
 mountAppRoutes('');
 
-// Health Check Endpoint (Hosting platforms jaise Render/Railway ko check karne ke liye)
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'healthy', uptime: process.uptime() });
+
+// 🚀 Keep-Alive Health Check Endpoint (Server + MongoDB Heartbeat)
+app.get('/health', async (req, res) => {
+    try {
+        const mongoose = require('mongoose');
+        // Check MongoDB Connection State (1 = Connected)
+        const isDbConnected = mongoose.connection.readyState === 1;
+
+        if (!isDbConnected) {
+            return res.status(503).json({
+                status: 'degraded',
+                message: 'Database not ready',
+                timestamp: new Date()
+            });
+        }
+
+        // Database connection active rakhne ke liye ek lightweight ping query
+        await mongoose.connection.db.admin().ping();
+
+        return res.status(200).json({
+            status: 'healthy',
+            database: 'connected',
+            uptime: process.uptime(),
+            timestamp: new Date()
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: 'unhealthy',
+            error: error.message
+        });
+    }
 });
 
 // 🛡️ 8. UNKNOWN API ROUTE QUARANTINE (API 404 Handler)
