@@ -4,7 +4,7 @@ const nodemailer = require('nodemailer');
 const getTransporter = () => {
     return nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 587,
+        port: 2525,
         secure: false, // 587 uses STARTTLS
         family: 4,     // 🚀 Force IPv4 to prevent Render ENETUNREACH crash
         auth: {
