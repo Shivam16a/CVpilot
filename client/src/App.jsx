@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyOtp from './pages/VerifyOtp';
 import TemplateSelection from './pages/TemplateSelection';
 import Profile from './pages/Profile';
 import BuildResume from './pages/BuildResume';
@@ -36,6 +37,7 @@ export default function App() {
         {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-otp" element={<VerifyOtp />} />
 
         {/* 🚀 Plan Upgrade / Pricing Page (Unlocked for all logged-in users) */}
         <Route
