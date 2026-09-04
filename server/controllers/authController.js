@@ -1,3 +1,4 @@
+// server/controllers/authController.js
 const User = require("../models/users");
 const bcrypt = require("bcryptjs");
 
@@ -5,60 +6,62 @@ const generateOTP = require("../utils/generateOTP");
 const sendEmail = require("../utils/sendEmail");
 const generateToken = require("../utils/generateToken");
 
-
 // REGISTER
 exports.register = async (req, res) => {
     try {
-        const {
-            username,
-            email,
-            phone,
-            password
-        } = req.body;
+        const { username, email, phone, password } = req.body;
 
-        const existingUser = await User.findOne({ email });
+        if (!email || !password || !username) {
+            return res.status(400).json({ success: false, message: "All required fields must be filled." });
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+        const existingUser = await User.findOne({ email: normalizedEmail });
 
         if (existingUser) {
             return res.status(400).json({
                 success: false,
-                message: "User already exists",
+                message: "User already exists with this email.",
             });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-
         const otp = generateOTP();
 
         await User.create({
-            username,
-            email,
-            phone,
+            username: username.trim(),
+            email: normalizedEmail,
+            phone: phone ? phone.trim() : '',
             password: hashedPassword,
             otp,
             otpExpire: Date.now() + 5 * 60 * 1000,
         });
 
-        await sendEmail(email, otp);
+        await sendEmail(normalizedEmail, otp);
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
-            message: "OTP sent to email. Verify account.",
+            message: "OTP sent to email. Please verify your account.",
         });
     } catch (error) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: error.message,
+            message: "Registration failed. Please try again.",
         });
     }
 };
-
 
 // VERIFY OTP
 exports.verifyOTP = async (req, res) => {
     try {
         const { email, otp } = req.body;
 
-        const user = await User.findOne({ email });
+        if (!email || !otp) {
+            return res.status(400).json({ success: false, message: "Email and OTP are required." });
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+        const user = await User.findOne({ email: normalizedEmail });
 
         if (!user) {
             return res.status(404).json({
@@ -87,37 +90,41 @@ exports.verifyOTP = async (req, res) => {
 
         await user.save();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message: "Email verified successfully",
+            message: "Email verified successfully. You can now login.",
         });
     } catch (error) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: error.message,
+            message: "Verification failed. Please try again.",
         });
     }
 };
 
-
-// LOGIN (FIXED: Added Block Check & Explicit User Details Return)
+// LOGIN
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        const user = await User.findOne({ email });
+        if (!email || !password) {
+            return res.status(400).json({ success: false, message: "Email and password are required." });
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+        const user = await User.findOne({ email: normalizedEmail });
 
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: "User not found",
+                message: "User not found with this email",
             });
         }
 
         if (!user.isVerified) {
             return res.status(400).json({
                 success: false,
-                message: "Verify email first",
+                message: "Email is not verified. Please verify your email first.",
             });
         }
 
@@ -126,7 +133,7 @@ exports.login = async (req, res) => {
             return res.status(403).json({
                 success: false,
                 isBlocked: true,
-                message: "Your account has been blocked by Admin.",
+                message: "Your account has been suspended by Admin for security reasons.",
             });
         }
 
@@ -135,14 +142,14 @@ exports.login = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid credentials",
+                message: "Invalid password credentials.",
             });
         }
 
         const token = generateToken(user._id);
 
-        // 🚀 2. CLEAN SANITIZED USER RESPONSE (Ensures username & isAdmin are always available)
-        res.status(200).json({
+        // 🚀 2. CLEAN SANITIZED USER RESPONSE
+        return res.status(200).json({
             success: true,
             message: "Login successful!",
             token,
@@ -158,61 +165,61 @@ exports.login = async (req, res) => {
             },
         });
     } catch (error) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: error.message,
+            message: "Login service error. Please try again later.",
         });
     }
 };
-
 
 // FORGOT PASSWORD
 exports.forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Please provide an email address." });
+        }
 
-        const user = await User.findOne({ email });
+        const normalizedEmail = email.toLowerCase().trim();
+        const user = await User.findOne({ email: normalizedEmail });
 
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: "User not found",
+                message: "Account not found with this email.",
             });
         }
 
         const otp = generateOTP();
-
         user.otp = otp;
         user.otpExpire = Date.now() + 5 * 60 * 1000;
 
         await user.save();
+        await sendEmail(normalizedEmail, otp);
 
-        await sendEmail(email, otp);
-
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message: "OTP sent to email",
+            message: "OTP sent to your email.",
         });
-
     } catch (error) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: error.message,
+            message: "Failed to send reset OTP.",
         });
     }
 };
 
-
 // RESET PASSWORD
 exports.resetPassword = async (req, res) => {
     try {
-        const {
-            email,
-            otp,
-            newPassword
-        } = req.body;
+        const { email, otp, newPassword } = req.body;
 
-        const user = await User.findOne({ email });
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ success: false, message: "All fields are required." });
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+        const user = await User.findOne({ email: normalizedEmail });
 
         if (!user) {
             return res.status(404).json({
@@ -243,15 +250,14 @@ exports.resetPassword = async (req, res) => {
 
         await user.save();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message: "Password reset successfully",
+            message: "Password reset successfully. You can now login.",
         });
-
     } catch (error) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: error.message,
+            message: "Password reset failed.",
         });
     }
 };

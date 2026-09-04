@@ -21,28 +21,36 @@ const { firewallShield, refreshBlockedIpsCache } = require('./middleware/firewal
 dotenv.config();
 const app = express();
 
-// 1. Trust Proxy Setup (Reverse-proxies jaise Vercel/Render/Nginx ke liye zaroori)
+// 1. Trust Proxy Setup (Reverse-proxies jaise Render, Railway, Vercel ke liye zaroori)
 app.set('trust proxy', 1);
 
-// 2. Helmet Security Headers
-app.use(helmet());
+// 2. Helmet Security Headers (Production Safe CSP)
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
-// 3. Dynamic CORS Configuration (Fixed wildcard + credentials conflict)
+// 3. Dynamic CORS Configuration (Fixed crash & Trailing Slash bug)
+const rawClientUrl = (process.env.CLIENT_URL || '').replace(/\/+$/, ''); // Remove trailing slash
+
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
-    process.env.CLIENT_URL // Live frontend domain (e.g. https://cvpilot.vercel.app)
+    rawClientUrl
 ].filter(Boolean);
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Allow requests with no origin (curl, postman, mobile apps) or matched origins
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes(origin.replace(/\/+$/, ''))) {
             callback(null, true);
         } else {
-            callback(new Error('Blocked by CORS policy'));
+            // Error throw karne ke bajaye safe rejection taaki server crash na ho
+            callback(null, false);
         }
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // 4. Firewall Shield (Early check)
@@ -63,7 +71,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// 🚀 6. UNIQUE DEVICE TRACKER (Sirf API calls par track hoga, static files par DB burden nahi banega)
+// 🚀 6. UNIQUE DEVICE TRACKER (Sirf API calls par track hoga, non-blocking)
 app.use('/api', async (req, res, next) => {
     try {
         if (req.method !== 'OPTIONS') {
@@ -94,7 +102,7 @@ app.use('/api', async (req, res, next) => {
 // 🚀 7. Rate Limiting Setup
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200,
+    max: 250,
     validate: { trustProxy: false },
     message: { success: false, message: "Too many requests from this IP, please try again after 15 minutes." }
 });
@@ -103,19 +111,15 @@ app.use("/api/", globalLimiter);
 // Auth Specific Rate Limiter
 const authLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
-    max: 15,
+    max: 20,
     validate: { trustProxy: false },
     message: { success: false, message: "Too many authentication attempts! Please wait 10 minutes." }
 });
 app.use("/api/auth/login", authLimiter);
 
-// server/server.js
-
 // ==========================================
 // 🚀 DUAL COMPATIBILITY API ROUTES MOUNT
-// (Handles both with /api and without /api seamlessly)
 // ==========================================
-
 const mountAppRoutes = (prefix = '/api') => {
     app.use(`${prefix}/jobs`, jobRoutes);
     app.use(`${prefix}/auth`, authroute);
@@ -126,11 +130,16 @@ const mountAppRoutes = (prefix = '/api') => {
     app.use(`${prefix}/contact`, contactRoutes);
 };
 
-// 1. Primary standard routes (/api/admin, /api/contact, etc.)
+// Primary standard routes (/api/*)
 mountAppRoutes('/api');
 
-// 2. Fallback direct routes (/admin, /contact, /resume, etc. agar frontend se /api miss ho jaye)
+// Fallback direct routes (/admin, /resume, etc.)
 mountAppRoutes('');
+
+// Health Check Endpoint (Hosting platforms jaise Render/Railway ko check karne ke liye)
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'healthy', uptime: process.uptime() });
+});
 
 // 🛡️ 8. UNKNOWN API ROUTE QUARANTINE (API 404 Handler)
 app.use('/api', (req, res) => {
