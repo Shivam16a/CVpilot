@@ -1,7 +1,7 @@
 // client/src/services/api.js
 import axios from 'axios';
 
-const rawBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:6050/api';
+const rawBase = import.meta.env.VITE_API_BASE_URL || 'https://cvpilot-n525.onrender.com/api';
 const API_BASE_URL = rawBase.replace(/\/+$/, '');
 
 axios.defaults.timeout = 10000;

@@ -3,13 +3,22 @@ const nodemailer = require('nodemailer');
 
 const getTransporter = () => {
     return nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // 587 uses STARTTLS
+        family: 4,     // 🚀 Force IPv4 to prevent Render ENETUNREACH crash
         auth: {
             user: process.env.EMAIL,
             pass: process.env.EMAIL_PASSWORD
+        },
+        tls: {
+            rejectUnauthorized: false
         }
     });
 };
+
+// Dynamic Client URL with safe fallback
+const CLIENT_BASE = (process.env.CLIENT_URL || 'https://cvpilot-n525.onrender.com').replace(/\/+$/, '');
 
 // 🎨 Clean Base Email Wrapper for Corporate Delivery
 const emailLayout = (headline, badgeText, badgeColor, contentHtml) => `
@@ -88,7 +97,7 @@ const AUTOMATED_TEMPLATES = {
             <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 28px 0 14px;">
                 <tr>
                     <td align="center">
-                        <a href="http://localhost:5173/upgrade-plan" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: #020617; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 800; font-size: 14px; display: inline-block; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);">
+                        <a href="${CLIENT_BASE}/upgrade-plan" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: #020617; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 800; font-size: 14px; display: inline-block; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);">
                             Upgrade to Pro (Starting ₹199) →
                         </a>
                     </td>
@@ -138,7 +147,7 @@ const AUTOMATED_TEMPLATES = {
             <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 24px 0 12px;">
                 <tr>
                     <td align="center">
-                        <a href="http://localhost:5173/login" style="background-color: #ef4444; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 13px; display: inline-block;">
+                        <a href="${CLIENT_BASE}/login" style="background-color: #ef4444; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 13px; display: inline-block;">
                             Re-Authenticate Account
                         </a>
                     </td>
@@ -172,7 +181,7 @@ const AUTOMATED_TEMPLATES = {
             <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 28px 0 12px;">
                 <tr>
                     <td align="center">
-                        <a href="http://localhost:5173/build-resume" style="background-color: #10b981; color: #020617; text-decoration: none; padding: 13px 30px; border-radius: 9px; font-weight: 700; font-size: 14px; display: inline-block;">
+                        <a href="${CLIENT_BASE}/build-resume" style="background-color: #10b981; color: #020617; text-decoration: none; padding: 13px 30px; border-radius: 9px; font-weight: 700; font-size: 14px; display: inline-block;">
                             Test Features in Workspace →
                         </a>
                     </td>
@@ -186,11 +195,11 @@ const AUTOMATED_TEMPLATES = {
 const sendMail = async ({ to, subject, html }) => {
     const transporter = getTransporter();
     return transporter.sendMail({
-        from: `"CVPilot Team" <${process.env.EMAIL}>`,
+        from: `"CVPilot Security" <${process.env.EMAIL}>`,
         to,
         subject,
         html
     });
 };
 
-module.exports = { sendMail, AUTOMATED_TEMPLATES };
+module.exports = { sendMail, AUTOMATED_TEMPLATES, emailLayout };

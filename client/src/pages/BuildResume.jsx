@@ -1,53 +1,48 @@
 // client/src/pages/BuildResume.jsx
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom'; // 🚀 Import query param hook
+import { useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import ResumeWizard from '../components/ResumeWizard';
 import ResumePreview from '../components/ResumePreview';
 import { useResumeStore } from '../store/useResumeStore';
+import axios from '../services/api'; // 🛡️ Hamara secured axios instance import karein
 
 export default function BuildResume() {
     const [searchParams] = useSearchParams();
-    const resumeId = searchParams.get('id'); // 🚀 1. Extract ?id= from URL
+    const resumeId = searchParams.get('id');
 
     const { currentStep, setFullResume, setStep, isNewResumeMode } = useResumeStore();
     const [pageLoading, setPageLoading] = useState(true);
 
     useEffect(() => {
         const checkExistingResume = async () => {
-            // Agar New Resume mode active hai aur koi specific ID request nahi ki gayi, toh skip kar do
+            // Agar New Resume mode active hai aur koi specific ID request nahi ki gayi, toh skip karein
             if (isNewResumeMode && !resumeId) {
                 setPageLoading(false);
                 return;
             }
 
             try {
-                const token = localStorage.getItem('token');
-
-                // 🚀 2. If ID present in URL, pass it to API, else call fallback endpoint
+                // 🚀 Relative route use karein — interceptor Render live URL aur Auth Token auto-inject karega
                 const endpoint = resumeId
-                    ? `http://localhost:6050/api/resume/get-resume?id=${resumeId}`
-                    : 'http://localhost:6050/api/resume/get-resume';
+                    ? `/resume/get-resume?id=${resumeId}`
+                    : '/resume/get-resume';
 
-                const response = await fetch(endpoint, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const resData = await response.json();
+                const response = await axios.get(endpoint);
 
-                if (resData.success && resData.resume) {
-                    setFullResume(resData.resume);
+                if (response.data?.success && response.data?.resume) {
+                    setFullResume(response.data.resume);
                     setStep(8);
                 }
             } catch (error) {
-                console.error("Persistence check failed:", error);
+                // 🛡️ Silent fail — Interceptor ne error sanitize kar diya hai, console par raw trace leak na karein
             } finally {
                 setPageLoading(false);
             }
         };
 
         checkExistingResume();
-    }, [setFullResume, setStep, isNewResumeMode, resumeId]); // 🚀 Added resumeId to dependencies
+    }, [setFullResume, setStep, isNewResumeMode, resumeId]);
 
     if (pageLoading) {
         return (

@@ -1,7 +1,7 @@
 // client/src/services/adminService.js
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:6050/api/admin';
+const API_BASE_URL = 'https://cvpilot-n525.onrender.com/api/admin';
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
