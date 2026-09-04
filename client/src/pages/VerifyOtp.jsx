@@ -1,32 +1,23 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 
-// Production backend fallback URL
 const API_URL = import.meta.env.VITE_API_URL || "https://cvpilot-n525.onrender.com";
 
 function VerifyOtp() {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // 🚀 React Router State se email extract karein (Register page se jo pass hua)
+    const passedEmail = location.state?.email || "";
+
+    const [email, setEmail] = useState(passedEmail);
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [loading, setLoading] = useState(false);
-    const [resending, setResending] = useState(false);
-    const [timer, setTimer] = useState(60);
     const [alertMsg, setAlertMsg] = useState({ type: "", text: "" });
     const inputRefs = useRef([]);
 
-    const email = localStorage.getItem("email") || "your registered email";
-
-    // Resend countdown timer
-    useEffect(() => {
-        let interval;
-        if (timer > 0) {
-            interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
-        }
-        return () => clearInterval(interval);
-    }, [timer]);
-
-    // Handle digit input & auto-focus next
     const handleChange = (e, index) => {
         const val = e.target.value;
         if (!/^\d*$/.test(val)) return;
@@ -40,31 +31,32 @@ function VerifyOtp() {
         }
     };
 
-    // Handle Backspace navigation
     const handleKeyDown = (e, index) => {
         if (e.key === "Backspace" && !otp[index] && index > 0) {
             inputRefs.current[index - 1]?.focus();
         }
     };
 
-    // Handle Paste 6-digit OTP
     const handlePaste = (e) => {
         e.preventDefault();
         const pastedData = e.clipboardData.getData("text").trim();
         if (/^\d{6}$/.test(pastedData)) {
-            const digits = pastedData.split("");
-            setOtp(digits);
+            setOtp(pastedData.split(""));
             inputRefs.current[5]?.focus();
         }
     };
 
-    // Submit Verification
     const submitHandler = async (e) => {
         e.preventDefault();
         const finalOtp = otp.join("");
 
+        if (!email.trim()) {
+            setAlertMsg({ type: "danger", text: "Registered email address is required." });
+            return;
+        }
+
         if (finalOtp.length < 6) {
-            setAlertMsg({ type: "danger", text: "Please enter all 6 digits." });
+            setAlertMsg({ type: "danger", text: "Please enter all 6 digits of the OTP." });
             return;
         }
 
@@ -73,7 +65,7 @@ function VerifyOtp() {
             setAlertMsg({ type: "", text: "" });
 
             const res = await axios.post(`${API_URL}/api/auth/verify-otp`, {
-                email,
+                email: email.toLowerCase().trim(),
                 otp: finalOtp,
             });
 
@@ -92,37 +84,14 @@ function VerifyOtp() {
         }
     };
 
-    // Resend OTP
-    const handleResend = async () => {
-        if (timer > 0 || resending) return;
-        try {
-            setResending(true);
-            setAlertMsg({ type: "", text: "" });
-
-            await axios.post(`${API_URL}/api/auth/resend-otp`, { email });
-
-            setAlertMsg({ type: "success", text: "New OTP sent to your email." });
-            setTimer(60);
-        } catch (error) {
-            setAlertMsg({
-                type: "danger",
-                text: error.response?.data?.message || "Failed to resend code."
-            });
-        } finally {
-            setResending(false);
-        }
-    };
-
     return (
         <div className="auth-container d-flex justify-content-center align-items-center min-vh-100 py-4">
             <div className="container">
                 <div className="row justify-content-center">
                     <div className="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
 
-                        {/* Identical Login Page Dark Card */}
                         <div className="auth-card border-0 shadow-lg p-4 p-md-5 text-center">
-
-                            {/* Reusable Brand Logo */}
+                            {/* Brand Logo */}
                             <div className="d-flex justify-content-center mb-3">
                                 <BrandLogo size={50} showText={true} />
                             </div>
@@ -131,20 +100,41 @@ function VerifyOtp() {
                                 Verify Account
                             </h2>
 
-                            <p className="auth-subtitle text-secondary small mb-4">
-                                Enter the 6-digit verification code sent to<br />
-                                <span className="text-info fw-medium">{email}</span>
-                            </p>
+                            {/* Agar state se email aaya hai toh text dikhao, warna input field */}
+                            {passedEmail ? (
+                                <p className="auth-subtitle text-secondary small mb-4">
+                                    Enter the 6-digit verification code sent to<br />
+                                    <span className="text-info fw-medium text-break">{passedEmail}</span>
+                                </p>
+                            ) : (
+                                <p className="auth-subtitle text-secondary small mb-3">
+                                    Enter your registered email and the 6-digit OTP dispatched to you.
+                                </p>
+                            )}
 
-                            {/* Status Alert */}
                             {alertMsg.text && (
                                 <div className={`alert alert-${alertMsg.type} py-2 px-3 small text-center mb-3`} role="alert">
                                     {alertMsg.text}
                                 </div>
                             )}
 
-                            {/* 6-Digit OTP Box Grid */}
                             <form onSubmit={submitHandler}>
+                                {/* Fallback email input agar direct route open hua ho */}
+                                {!passedEmail && (
+                                    <div className="mb-3 text-start">
+                                        <label className="text-secondary small mb-1">Registered Email</label>
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="name@example.com"
+                                            className="form-control form-control-dark"
+                                            required
+                                        />
+                                    </div>
+                                )}
+
+                                {/* OTP Inputs */}
                                 <div className="d-flex justify-content-center gap-2 mb-4" onPaste={handlePaste}>
                                     {otp.map((digit, index) => (
                                         <input
@@ -163,7 +153,6 @@ function VerifyOtp() {
                                     ))}
                                 </div>
 
-                                {/* Login-Styled Action Button */}
                                 <button
                                     type="submit"
                                     className="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2 mb-3"
@@ -180,31 +169,11 @@ function VerifyOtp() {
                                 </button>
                             </form>
 
-                            {/* Resend & Return Links */}
-                            <div className="mt-3">
-                                <p className="text-secondary small mb-1">Didn't receive the code?</p>
-                                {timer > 0 ? (
-                                    <span className="text-muted small">
-                                        Resend in <strong className="text-info">{timer}s</strong>
-                                    </span>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={handleResend}
-                                        disabled={resending}
-                                        className="btn btn-link text-info text-decoration-none p-0 small fw-semibold"
-                                    >
-                                        {resending ? "Sending..." : "Resend OTP"}
-                                    </button>
-                                )}
-                            </div>
-
                             <div className="mt-3 pt-3 border-top border-secondary border-opacity-25">
                                 <Link to="/login" className="text-decoration-none text-secondary small">
                                     Already verified? <span className="text-info fw-semibold">Sign In</span>
                                 </Link>
                             </div>
-
                         </div>
 
                     </div>
