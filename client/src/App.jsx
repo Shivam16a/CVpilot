@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyOtp from './pages/VerifyOtp';
+import ResetPassword from './pages/ResetPassword';
 import TemplateSelection from './pages/TemplateSelection';
 import Profile from './pages/Profile';
 import BuildResume from './pages/BuildResume';
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
+        <Route path='/reset-password' element={<ResetPassword />} />
 
         {/* 🚀 Plan Upgrade / Pricing Page (Unlocked for all logged-in users) */}
         <Route
