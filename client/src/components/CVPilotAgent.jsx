@@ -14,7 +14,6 @@ export default function CVPilotAgent() {
 
     const [isOpen, setIsOpen] = useState(false);
 
-    // Initial welcome state generator
     const getInitialMessage = () => ([
         {
             sender: 'ai',
@@ -22,7 +21,7 @@ export default function CVPilotAgent() {
         }
     ]);
 
-    const [messages, setMessages] = useState(getInitialMessage());
+    const [messages, setMessages] = useState(getInitialMessage);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const chatEndRef = useRef(null);
@@ -31,10 +30,9 @@ export default function CVPilotAgent() {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, loading]);
 
-    // 🚀 CLOSE (X) HANDLER: Closes window AND clears chat memory
     const handleCloseChat = () => {
         setIsOpen(false);
-        setMessages(getInitialMessage()); // Reset back to first welcome message
+        setMessages(getInitialMessage());
         setInput('');
     };
 
@@ -68,16 +66,14 @@ export default function CVPilotAgent() {
     };
 
     return (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 99999, fontFamily: 'sans-serif' }}>
+        <div className="cvpilot-chat-wrapper">
 
             {/* FLOATING BUTTON */}
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
+                    className="ai-agent-trigger-btn"
                     style={{
-                        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-                        color: '#ffffff',
-                        border: '1px solid rgba(56, 189, 248, 0.5)',
                         borderRadius: '50px',
                         padding: '12px 22px',
                         fontWeight: '700',
@@ -85,8 +81,7 @@ export default function CVPilotAgent() {
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
-                        boxShadow: '0 10px 25px rgba(2, 132, 199, 0.5)'
+                        gap: '8px'
                     }}
                 >
                     <span style={{ fontSize: '1.1rem' }}>✨</span>
@@ -96,24 +91,11 @@ export default function CVPilotAgent() {
 
             {/* CHAT WINDOW */}
             {isOpen && (
-                <div
-                    style={{
-                        width: '380px',
-                        height: '500px',
-                        backgroundColor: '#0f172a',
-                        borderRadius: '16px',
-                        border: '1px solid #1e293b',
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.8), 0 0 20px rgba(56, 189, 248, 0.2)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                        color: '#ffffff'
-                    }}
-                >
+                <div className="cvpilot-chat-window">
                     {/* Header */}
                     <div
                         style={{
-                            padding: '14px 18px',
+                            padding: '12px 16px',
                             backgroundColor: '#1e293b',
                             borderBottom: '1px solid #334155',
                             display: 'flex',
@@ -122,14 +104,13 @@ export default function CVPilotAgent() {
                         }}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '1.2rem' }}>✨</span>
+                            <span style={{ fontSize: '1.1rem' }}>✨</span>
                             <div>
-                                <div style={{ fontWeight: '700', fontSize: '0.92rem', color: '#f8fafc' }}>CVPilot Career Assistant</div>
-                                <div style={{ fontSize: '0.7rem', color: '#38bdf8' }}>● Online & Ready</div>
+                                <div style={{ fontWeight: '700', fontSize: '0.88rem', color: '#f8fafc' }}>CVPilot Career Assistant</div>
+                                <div style={{ fontSize: '0.68rem', color: '#38bdf8' }}>● Online & Ready</div>
                             </div>
                         </div>
 
-                        {/* 🚀 CLICKING "X" CLEARS CHAT */}
                         <button
                             onClick={handleCloseChat}
                             style={{
@@ -138,7 +119,7 @@ export default function CVPilotAgent() {
                                 color: '#94a3b8',
                                 fontSize: '1.2rem',
                                 cursor: 'pointer',
-                                padding: '0 4px'
+                                padding: '0 6px'
                             }}
                             title="Close & Clear Chat"
                         >
@@ -148,13 +129,14 @@ export default function CVPilotAgent() {
 
                     {/* Chat Messages Body */}
                     <div
+                        className="chat-scroll-container"
                         style={{
                             flex: 1,
-                            padding: '16px',
+                            padding: '14px',
                             overflowY: 'auto',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '14px',
+                            gap: '12px',
                             backgroundColor: '#090d16'
                         }}
                     >
@@ -163,19 +145,20 @@ export default function CVPilotAgent() {
                                 key={idx}
                                 style={{
                                     alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
-                                    maxWidth: '85%'
+                                    maxWidth: '88%'
                                 }}
                             >
                                 <div
                                     style={{
-                                        padding: '12px 14px',
+                                        padding: '10px 14px',
                                         borderRadius: m.sender === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
                                         backgroundColor: m.sender === 'user' ? '#0ea5e9' : '#1e293b',
                                         color: m.sender === 'user' ? '#0f172a' : '#f8fafc',
-                                        fontSize: '0.85rem',
+                                        fontSize: '0.84rem',
                                         lineHeight: '1.5',
                                         border: m.sender === 'user' ? 'none' : '1px solid #334155',
-                                        fontWeight: m.sender === 'user' ? '600' : '400'
+                                        fontWeight: m.sender === 'user' ? '600' : '400',
+                                        wordBreak: 'break-word'
                                     }}
                                 >
                                     {m.sender === 'ai' ? (
@@ -190,7 +173,7 @@ export default function CVPilotAgent() {
                                     style={{
                                         fontSize: '0.65rem',
                                         color: '#64748b',
-                                        marginTop: '4px',
+                                        marginTop: '3px',
                                         textAlign: m.sender === 'user' ? 'right' : 'left'
                                     }}
                                 >
@@ -200,7 +183,7 @@ export default function CVPilotAgent() {
                         ))}
 
                         {loading && (
-                            <div style={{ alignSelf: 'flex-start', color: '#38bdf8', fontSize: '0.8rem', padding: '8px 12px', backgroundColor: '#1e293b', borderRadius: '12px' }}>
+                            <div style={{ alignSelf: 'flex-start', color: '#38bdf8', fontSize: '0.78rem', padding: '6px 12px', backgroundColor: '#1e293b', borderRadius: '12px' }}>
                                 ⚡ Thinking...
                             </div>
                         )}
@@ -208,7 +191,7 @@ export default function CVPilotAgent() {
                     </div>
 
                     {/* Input Footer */}
-                    <div style={{ padding: '12px', backgroundColor: '#0f172a', borderTop: '1px solid #1e293b' }}>
+                    <div style={{ padding: '10px', backgroundColor: '#0f172a', borderTop: '1px solid #1e293b' }}>
                         <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '8px' }}>
                             <input
                                 type="text"
@@ -220,7 +203,7 @@ export default function CVPilotAgent() {
                                     backgroundColor: '#1e293b',
                                     border: '1px solid #334155',
                                     color: '#ffffff',
-                                    padding: '10px 14px',
+                                    padding: '9px 12px',
                                     borderRadius: '8px',
                                     fontSize: '0.82rem',
                                     outline: 'none'
@@ -233,7 +216,7 @@ export default function CVPilotAgent() {
                                     backgroundColor: '#0ea5e9',
                                     color: '#0f172a',
                                     border: 'none',
-                                    padding: '10px 16px',
+                                    padding: '9px 14px',
                                     borderRadius: '8px',
                                     fontWeight: '700',
                                     cursor: 'pointer',
