@@ -2,55 +2,65 @@
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const callGeminiAPI = async (prompt, retries = 2) => {
+// const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const callGeminiAPI = async (prompt) => {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
     if (!GEMINI_API_KEY) {
         throw new Error("GEMINI_API_KEY is not defined in environment variables.");
     }
 
-    // Updated model endpoint
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`;
+    // Models sequence (Agar 3.6-flash busy ho to backup models par switch hoga)
+    const models = [
+        "gemini-3.6-flash",
+        "gemini-2.5-flash",
+        "gemini-1.5-flash"
+    ];
 
-    try {
-        const response = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [{ text: prompt }]
-                    }
-                ]
-            })
-        });
+    let lastError = null;
 
-        const data = await response.json();
+    for (const model of models) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
-        // 503 High Demand Retries
-        if (response.status === 503 || data.error?.code === 503) {
-            if (retries > 0) {
-                console.warn(`⚠️ Gemini API 503 Service Unavailable. Retrying... (${retries} attempts left)`);
-                await wait(2000);
-                return callGeminiAPI(prompt, retries - 1);
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [{ text: prompt }]
+                        }
+                    ]
+                })
+            });
+
+            const data = await response.json();
+
+            // 503 (High Demand) ya 429 (Rate Limit) milne par next fallback model par switch karein
+            if (response.status === 503 || response.status === 429 || data.error?.code === 503) {
+                console.warn(`⚠️ Gemini API 503/429 on ${model}. Trying fallback model...`);
+                lastError = data.error?.message || "Service Unavailable (503)";
+                await wait(1000);
+                continue;
             }
-        }
 
-        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-            return data.candidates[0].content.parts[0].text.trim();
-        } else {
-            console.error("Gemini Raw Error Response:", JSON.stringify(data));
-            throw new Error(data.error?.message || "AI Response format mismatch");
+            if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                return data.candidates[0].content.parts[0].text.trim();
+            } else {
+                console.error(`Gemini Raw Error Response (${model}):`, JSON.stringify(data));
+                lastError = data.error?.message || "AI Response format mismatch";
+            }
+        } catch (error) {
+            console.warn(`⚠️ Network/Fetch error on ${model}: ${error.message}`);
+            lastError = error.message;
         }
-    } catch (error) {
-        if (retries > 0 && error.message?.includes('503')) {
-            await wait(2000);
-            return callGeminiAPI(prompt, retries - 1);
-        }
-        throw error;
     }
+
+    throw new Error(`All Gemini models failed. Last error: ${lastError}`);
 };
 
 // 1. Professional Summary Generator (with Fallback)
@@ -67,7 +77,7 @@ const generateSummary = async (req, res) => {
         return res.status(200).json({ success: true, summary: cleanSummary });
     } catch (error) {
         console.warn("⚠️ Gemini Summary Failed. Using Smart Fallback Data. Error:", error.message);
-        
+
         // Dynamic Fallback Summary
         const fallbackSummary = `Results-oriented ${role} with strong expertise in ${skillsString}. Proven record of engineering scalable, high-performance web applications, optimizing backend architectures, and collaborating with cross-functional teams to deliver enterprise software solutions. Dedicated to continuous optimization, clean code design, and modern development best practices.`;
 
