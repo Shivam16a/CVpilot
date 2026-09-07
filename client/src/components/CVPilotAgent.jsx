@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 
+const API_URL = import.meta.env.VITE_API_URL || "https://cvpilot-n525.onrender.com";
+
 export default function CVPilotAgent() {
     const token = localStorage.getItem('token');
     if (!token) return null;
@@ -47,7 +49,7 @@ export default function CVPilotAgent() {
 
         try {
             const res = await axios.post(
-                'http://localhost:6050/api/ai/agent-chat',
+                `${API_URL}/api/ai/agent-chat`,
                 { message: userMsg },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
