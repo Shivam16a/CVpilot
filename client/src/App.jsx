@@ -39,7 +39,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
-        <Route path='/reset-password' element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<ResetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* 🚀 Plan Upgrade / Pricing Page (Unlocked for all logged-in users) */}
         <Route
