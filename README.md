@@ -4,13 +4,24 @@
 
   <!-- 🚀 Brand Title with Exact Icon Alignment -->
   <h1>
-    <a href="https://cvpilot-jade.vercel.app/" target="_blank" style="text-decoration: none;">
-      <img src="./client/public/CVPilot.svg" width="46" height="46" alt="CVPilot Logo" style="vertical-align: middle; margin-right: 6px;" />
-      <span style="vertical-align: middle;">
-        CV<font color="#00D2FF">Pilot</font>
-      </span>
-    </a>
-  </h1>
+  <a
+    href="https://cvpilot-jade.vercel.app/"
+    target="_blank"
+    style="text-decoration: none; color: #ffffff;"
+  >
+    <img
+      src="./client/public/CVPilot.svg"
+      width="46"
+      height="46"
+      alt="CVPilot Logo"
+      style="vertical-align: middle; margin-right: 6px;"
+    />
+    <span style="vertical-align: middle; color: #ffffff;">
+      CV<span style="color: #00D2FF;">Pilot</span>
+    </span>
+  </a>
+</h1>
+
 
   <p>
     <b>Next-Gen AI Resume &amp; Career Copilot</b>
