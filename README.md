@@ -1,6 +1,11 @@
 <div align="center">
 
-<img src="./client/public/CVPilot.svg" width="50" height="50" alt="CVPilot Banner" />
+  <span style="display: inline-flex; align-items: center; gap: 10px;">
+    <img src="./client/public/CVPilot.svg" width="48" height="48" alt="CVPilot Logo" style="vertical-align: middle;" />
+    <span style="font-size: 38px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.5px;">
+      <span style="color: #FFFFFF;">CV</span><span style="color: #00D2FF;">Pilot</span>
+    </span>
+  </span>
 
 <br />
 
