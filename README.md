@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=1,14,27,33&height=220&section=header&text=CVPilot&fontSize=70&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=AI-Powered%20Career%20Automation%20%26%20Resume%20Platform&descAlignY=60&descAlign=50" width="100%" alt="CVPilot Banner" />
+<img src="./client/public/CVPilot.svg" width="100%" alt="CVPilot Banner" />
 
 <br />
 
@@ -147,7 +147,7 @@ CVPilot follows a simple client-server architecture.
                          │                          │
                          │ • Users                  │
                          │ • Resumes                │
-                         │ • Blocked IPs             │
+                         │ • Blocked IPs            │
                          └──────────────────────────┘
                                     │
                      ┌──────────────┼──────────────┐
@@ -446,7 +446,7 @@ Add them to `.gitignore`:
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/cvpilot.git
+git clone https://github.com/Shivam16a/CVpilot
 cd cvpilot
 ```
 
@@ -537,7 +537,7 @@ cvpilot/
 │   │   ├── pages/
 │   │   ├── services/
 │   │   ├── store/
-│   │   ├── hooks/
+│   │   ├── utils/
 │   │   └── App.jsx
 │   │
 │   ├── package.json
@@ -713,7 +713,6 @@ Then open a Pull Request.
 
 This project is currently intended for personal and educational use.
 
-Add your preferred license here if you plan to distribute the project publicly.
 
 ---
 
@@ -725,7 +724,7 @@ Add your preferred license here if you plan to distribute the project publicly.
 
 <br /><br />
 
-**CVPilot — Build better resumes. Apply smarter. 🚀**
+**CVPilot — AI Resume Builder Application 🚀**
 
 <br />
 
