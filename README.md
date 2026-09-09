@@ -1,52 +1,54 @@
 <div align="center">
 
-  <!-- 🚀 Brand Header (H1 Equivalent Sizing) -->
-  <a href="https://cvpilot-jade.vercel.app/" target="_blank" style="text-decoration: none;">
-    <span style="display: inline-flex; align-items: center; gap: 12px;">
-      <img src="./client/public/CVPilot.svg" width="48" height="48" alt="CVPilot Logo" style="vertical-align: middle;" />
-      <span style="font-size: 40px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.6px; line-height: 1;">
-        <span style="color: #FFFFFF;">CV</span><span style="color: #00D2FF;">Pilot</span>
-      </span>
-    </span>
-  </a>
+  <br />
 
-  <p style="margin-top: 10px; font-size: 15px; color: #94A3B8;">
-    Next-Gen AI Resume & Career Copilot
+  <!-- 🚀 Brand Title with Exact Icon Alignment -->
+  <h1>
+    <a href="https://cvpilot-jade.vercel.app/" target="_blank" style="text-decoration: none;">
+      <img src="./client/public/CVPilot.svg" width="46" height="46" alt="CVPilot Logo" style="vertical-align: middle; margin-right: 6px;" />
+      <span style="vertical-align: middle;">
+        CV<font color="#00D2FF">Pilot</font>
+      </span>
+    </a>
+  </h1>
+
+  <p>
+    <b>Next-Gen AI Resume &amp; Career Copilot</b>
   </p>
 
-  <!-- 🌐 Direct Live Production Link Badge -->
-  <p align="center">
+  <!-- 🌐 Live Production Badge -->
+  <p>
     <a href="https://cvpilot-jade.vercel.app/" target="_blank">
-      <img src="https://img.shields.io/badge/Live_App-cvpilot--jade.vercel.app-00D2FF?style=for-the-badge&logo=vercel&logoColor=black" alt="Live Demo" />
+      <img src="https://img.shields.io/badge/LIVE_APP-cvpilot--jade.vercel.app-00D2FF?style=for-the-badge&logo=vercel&logoColor=black" alt="Live Demo" />
     </a>
   </p>
 
-  <p align="center">
+  <p>
     <code>👉 Live Deployment: <a href="https://cvpilot-jade.vercel.app/">https://cvpilot-jade.vercel.app/</a></code>
   </p>
 
-<br />
+  <br />
 
-<p align="center">
-  <img src="https://img.shields.io/badge/MERN-Full%20Stack-0284c7?style=for-the-badge&logo=mongodb&logoColor=white" alt="MERN Stack" />
-  <img src="https://img.shields.io/badge/React%2018-Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 18" />
-  <img src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
-  <img src="https://img.shields.io/badge/Gemini-AI-8E75B2?style=for-the-badge&logo=google&logoColor=white" alt="Gemini AI" />
-  <img src="https://img.shields.io/badge/Brevo-REST%20API-0092FF?style=for-the-badge&logo=brevo&logoColor=white" alt="Brevo" />
-</p>
+  <!-- Tech Stack Badges -->
+  <p>
+    <img src="https://img.shields.io/badge/MERN-Full%20Stack-0284c7?style=for-the-badge&logo=mongodb&logoColor=white" alt="MERN Stack" />
+    <img src="https://img.shields.io/badge/React%2018-Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 18" />
+    <img src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
+    <img src="https://img.shields.io/badge/Gemini-AI-8E75B2?style=for-the-badge&logo=google&logoColor=white" alt="Gemini AI" />
+    <img src="https://img.shields.io/badge/Brevo-REST%20API-0092FF?style=for-the-badge&logo=brevo&logoColor=white" alt="Brevo" />
+  </p>
 
-<br />
+  <br />
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=20&duration=3000&pause=1000&color=38BDF8&center=true&vCenter=true&width=750&lines=Build+better+resumes;Match+your+resume+with+real+job+descriptions;Get+AI-powered+career+insights;Keep+your+career+data+secure;Create+ATS-friendly+resumes+in+minutes" alt="CVPilot Features" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=20&duration=3000&pause=1000&color=38BDF8&center=true&vCenter=true&width=750&lines=Build+better+resumes;Match+your+resume+with+real+job+descriptions;Get+AI-powered+career+insights;Keep+your+career+data+secure;Create+ATS-friendly+resumes+in+minutes" alt="CVPilot Features" />
 
-<br /><br />
+  <br /><br />
 
-<a href="#-overview">Overview</a> • <a href="#-features">Features</a> • <a href="#-architecture">Architecture</a> • <a href="#-tech-stack">Tech Stack</a> • <a href="#-security">Security</a> • <a href="#-setup">Setup</a> • <a href="#-api-reference">API</a>
+  <a href="#-overview">Overview</a> • <a href="#-features">Features</a> • <a href="#-architecture">Architecture</a> • <a href="#-tech-stack">Tech Stack</a> • <a href="#-security">Security</a> • <a href="#-setup">Setup</a> • <a href="#-api-reference">API</a>
 
-<br /><br />
+  <br /><br />
 
 </div>
-
 ---
 
 # 📌 Overview
