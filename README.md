@@ -1,11 +1,29 @@
 <div align="center">
 
-  <span style="display: inline-flex; align-items: center; gap: 10px;">
-    <img src="./client/public/CVPilot.svg" width="48" height="48" alt="CVPilot Logo" style="vertical-align: middle;" />
-    <span style="font-size: 38px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.5px;">
-      <span style="color: #FFFFFF;">CV</span><span style="color: #00D2FF;">Pilot</span>
+  <!-- 🚀 Brand Header (H1 Equivalent Sizing) -->
+  <a href="https://cvpilot-jade.vercel.app/" target="_blank" style="text-decoration: none;">
+    <span style="display: inline-flex; align-items: center; gap: 12px;">
+      <img src="./client/public/CVPilot.svg" width="48" height="48" alt="CVPilot Logo" style="vertical-align: middle;" />
+      <span style="font-size: 40px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.6px; line-height: 1;">
+        <span style="color: #FFFFFF;">CV</span><span style="color: #00D2FF;">Pilot</span>
+      </span>
     </span>
-  </span>
+  </a>
+
+  <p style="margin-top: 10px; font-size: 15px; color: #94A3B8;">
+    Next-Gen AI Resume & Career Copilot
+  </p>
+
+  <!-- 🌐 Direct Live Production Link Badge -->
+  <p align="center">
+    <a href="https://cvpilot-jade.vercel.app/" target="_blank">
+      <img src="https://img.shields.io/badge/Live_App-cvpilot--jade.vercel.app-00D2FF?style=for-the-badge&logo=vercel&logoColor=black" alt="Live Demo" />
+    </a>
+  </p>
+
+  <p align="center">
+    <code>👉 Live Deployment: <a href="https://cvpilot-jade.vercel.app/">https://cvpilot-jade.vercel.app/</a></code>
+  </p>
 
 <br />
 
