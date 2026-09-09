@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./client/public/CVPilot.svg" width="100%" alt="CVPilot Banner" />
+<img src="./client/public/CVPilot.svg" width="50" height="50" alt="CVPilot Banner" />
 
 <br />
 
