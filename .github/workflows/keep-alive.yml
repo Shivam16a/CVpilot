@@ -2,7 +2,8 @@ name: Keep-Alive Server & Database Ping
 
 on:
   schedule:
-  # ⚡ Runs every 14 minutes (Render sleeps after 15 mins of inactivity)
+  # ⚡ Runs ONCE daily at 06:30 UTC (12:00 PM IST)
+  # Saves Render free-tier hours so other projects can run smoothly
   - cron: '30 6 * * *'
   workflow_dispatch:
     # Manual trigger support from GitHub Actions UI
@@ -22,11 +23,17 @@ jobs:
         # Remove trailing slash if user added it in secrets
         CLEAN_URL=$(echo "$BACKEND_URL" | sed 's:/*$::')
 
-        echo "⚡ Sending scheduled heartbeat to $CLEAN_URL/health ..."
-        HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$CLEAN_URL/health")
+        echo "⚡ Waking up and pinging server at $CLEAN_URL/health ..."
 
-        if [ "$HTTP_RESPONSE" -eq 200 ]; then
-          echo "✅ Heartbeat Success: Status 200 OK (Server & DB Active)"
+        # 120s timeout diya hai taaki sleep se wake-up hone par Exit Code 28 na aaye
+        HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 --retry 2 --retry-delay 5 "$CLEAN_URL/health" || echo "000")
+
+        echo "HTTP Status Code Received: $HTTP_RESPONSE"
+
+        if [ "$HTTP_RESPONSE" = "200" ]; then
+          echo "✅ Daily Ping Success: Status 200 OK (Server & DB Checked)"
+        elif [ "$HTTP_RESPONSE" = "000" ]; then
+          echo "⚠️ Server woke up slowly or network timed out (Exit Code 28 handled safely)."
         else
-          echo "⚠️ Heartbeat Response: HTTP Status $HTTP_RESPONSE"
+          echo "⚠️ Heartbeat Response: HTTP Status $HTTP_RESPONSE (Server is active)"
         fi
